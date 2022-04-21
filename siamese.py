@@ -17,8 +17,8 @@ import sys
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-anchor_images_path = "/Users/deepakduggirala/Downloads/left"
-positive_images_path = "/Users/deepakduggirala/Downloads/right"
+anchor_images_path = "../left"
+positive_images_path = "../right"
 
 target_shape = (200, 200)
 
@@ -100,8 +100,12 @@ class DistanceLayer(layers.Layer):
         super().__init__(**kwargs)
 
     def call(self, anchor, positive, negative):
-        ap_distance = tf.reduce_sum(tf.square(anchor - positive), -1)
-        an_distance = tf.reduce_sum(tf.square(anchor - negative), -1)
+        norm_anchor = anchor / tf.linalg.norm(anchor, axis=1, keepdims=1)
+        norm_positive = positive / tf.linalg.norm(positive, axis=1, keepdims=1)
+        norm_negative = negative / tf.linalg.norm(negative, axis=1, keepdims=1)
+
+        ap_distance = tf.reduce_sum(tf.square(norm_anchor - norm_positive), -1)
+        an_distance = tf.reduce_sum(tf.square(norm_anchor - norm_negative), -1)
         return (ap_distance, an_distance)
 
 
@@ -112,12 +116,11 @@ def get_model():
     )
 
     # Add last layers
-    flatten = layers.Flatten()(base_cnn.output)
+    avgpool = layers.GlobalAveragePooling2D()(base_cnn.output)
+    flatten = layers.Flatten()(avgpool)
     dense1 = layers.Dense(512, activation="relu")(flatten)
     dense1 = layers.BatchNormalization()(dense1)
-    dense2 = layers.Dense(256, activation="relu")(dense1)
-    dense2 = layers.BatchNormalization()(dense2)
-    output = layers.Dense(256)(dense2)
+    output = layers.Dense(256)(dense1)
 
     # Build model
     model = Model(base_cnn.input, output, name="model")
@@ -145,7 +148,7 @@ def get_model():
         inputs=[anchor_input, positive_input, negative_input], outputs=distances
     )
 
-    return siamese_network, model
+    return siamese_network
 
 
 class SiameseModel(Model):
@@ -214,14 +217,14 @@ class SiameseModel(Model):
         # called automatically.
         return [self.loss_tracker]
 
-# Tensorboard callback
-# tensorboard serve --logdir logs/siamese/ --port 8080
-# log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-# tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
+# Tensorboard callback
+# tensorboard serve --logdir logs/ --port 8080
+log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False)
 
 # Save model weights callback function
-latest_checkpoint_path = "training_latest/cp.ckpt"
+latest_checkpoint_path = "latest_weights/cp.ckpt"
 latest_checkpoint_dir = os.path.dirname(latest_checkpoint_path)
 latest_cp_callback = tf.keras.callbacks.ModelCheckpoint(
     monitor='val_loss',
@@ -229,25 +232,26 @@ latest_cp_callback = tf.keras.callbacks.ModelCheckpoint(
     save_weights_only=True,
     verbose=1)
 
-# best_checkpoint_path = "training_best/weights.hdf5"
-# best_checkpoint_dir = os.path.dirname(best_checkpoint_path)
-# best_cp_callback = tf.keras.callbacks.ModelCheckpoint(
-#     monitor='val_loss',
-#     filepath=best_checkpoint_dir,
-#     save_weights_only=True,
-#     verbose=1,
-#     mode='min',
-#     save_best_only=True)
+best_checkpoint_path = "best_weights/cp.ckpt"
+best_checkpoint_dir = os.path.dirname(best_checkpoint_path)
+best_cp_callback = tf.keras.callbacks.ModelCheckpoint(
+    monitor='val_loss',
+    filepath=best_checkpoint_dir,
+    save_weights_only=True,
+    verbose=1,
+    mode='min',
+    save_best_only=True)
 
 siamese_network = get_model()
+siamese_model = SiameseModel(siamese_network)
+siamese_model.compile(optimizer=optimizers.SGD(0.0001))
 
 if len(sys.argv) > 1:
-    siamese_network.load_weights(sys.argv[1])
+    siamese_model.load_weights(sys.argv[1])
     print('loaded weights')
 
-siamese_model = SiameseModel(siamese_network)
-siamese_model.compile(optimizer=optimizers.Adam(0.0001))
-# siamese_model.fit(train_dataset, epochs=1, validation_data=val_dataset, callbacks=[tensorboard_callback])
 
-siamese_model.fit(train_dataset.take(1), epochs=1, validation_data=val_dataset,
-                  callbacks=[latest_cp_callback])
+# siamese_model.fit(train_dataset, epochs=5, validation_data=val_dataset, callbacks=[tensorboard_callback])
+
+siamese_model.fit(train_dataset, epochs=60, validation_data=val_dataset, callbacks=[
+                  latest_cp_callback, best_cp_callback, tensorboard_callback])
