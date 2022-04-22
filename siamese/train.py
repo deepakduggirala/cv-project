@@ -105,7 +105,7 @@ if __name__ == '__main__':
     log_dir = str(Path(args.log_dir) / RUN_DATETIME_STR)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False)
 
-    STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size'])
+    STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size']['train'])
 
     # Save model weights callback function
     filepath = str(Path('latest_models') / RUN_DATETIME_STR / 'model.ckpt')
