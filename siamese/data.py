@@ -14,7 +14,7 @@ def preprocess_image(image, image_size, augment=True):
 
 
 def parse_image_function(image_path, image_size, augment=True):
-
+    print('reading', image_path)
     image_string = tf.io.read_file(image_path)
     image = tf.image.decode_jpeg(image_string, channels=3)
     image = preprocess_image(image, image_size, augment)
@@ -38,35 +38,20 @@ def get_zoo_elephants_images_and_labels(dir_path):
     return list(images_paths), list(image_labels)
 
 
-def get_dataset(f, params, dir_path, cache_files=None):
+def get_dataset(f, params, dir_path, mode='train', cache_files=None):
 
-    image_paths, image_labels = f(dir_path)
+    image_paths, image_labels = f(Path(dir_path)/mode)
     N = len(image_labels)
 
-    AUTOTUNE = tf.data.experimental.AUTOTUNE
+    AUTOTUNE = tf.data.AUTOTUNE
     dataset = tf.data.Dataset.from_tensor_slices((image_paths, image_labels))
+    dataset = dataset.map(lambda x, y: (parse_image_function(
+        x, params['image_size']), y), num_parallel_calls=AUTOTUNE)
+    dataset = dataset.cache(cache_files[mode])
     dataset = dataset.shuffle(buffer_size=N)
+    dataset = dataset.batch(params['batch_size'][mode]).prefetch(AUTOTUNE)
 
-    train_ds = dataset.take(round(N * params['train_size']))
-    val_ds = dataset.skip(round(N * params['train_size']))
-
-    if cache_files:
-        train_ds = train_ds.cache(cache_files['train'])
-        val_ds = val_ds.cache(cache_files['val'])
-    else:
-        train_ds = train_ds.cache()
-        val_ds = val_ds.cache()
-
-    train_ds = train_ds.shuffle(buffer_size=N, reshuffle_each_iteration=True)
-    # val_ds   = val_ds.shuffle(buffer_size=N, reshuffle_each_iteration=True)
-
-    train_ds = train_ds.map(lambda x, y: (parse_image_function(x, params['image_size']), y))
-    train_ds = train_ds.batch(params['batch_size']).prefetch(AUTOTUNE)
-
-    val_ds = val_ds.map(lambda x, y: (parse_image_function(x, params['image_size']), y))
-    val_ds = val_ds.batch(params['val_batch_size']).prefetch(AUTOTUNE)
-
-    return train_ds, val_ds, N
+    return dataset, N
 
 
 def get_eval_dataset(f, params, dir_path):
@@ -75,7 +60,8 @@ def get_eval_dataset(f, params, dir_path):
 
     AUTOTUNE = tf.data.experimental.AUTOTUNE
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
-    dataset = dataset.map(lambda x: parse_image_function(x, params['image_size'], augment=False))
+    dataset = dataset.map(lambda x: parse_image_function(
+        x, params['image_size'], augment=False), num_parallel_calls=tf.data.AUTOTUNE)
     dataset = dataset.batch(params['batch_size']).prefetch(AUTOTUNE)
 
     return dataset, np.array(image_labels)

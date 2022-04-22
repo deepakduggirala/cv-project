@@ -1,9 +1,10 @@
 {
   "image_size": 256,
-  "batch_size": 128,
-  "val_batch_size": 512,
-  "train_size": 0.8,
-  "margin": 0.5,
+  "batch_size": {
+    "train": 128,
+    "val": 512
+  },
+  "margin": 0.25,
   "squared": false,
   "embedding_size": 256,
   "lr": 0.0001,

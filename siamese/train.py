@@ -4,6 +4,7 @@ import ssl
 import datetime
 import os
 import math
+from pathlib import Path
 
 from model import get_model
 from triplet_loss import batch_all_triplet_loss
@@ -76,9 +77,9 @@ if __name__ == '__main__':
                         help="Directory containing the dataset")
     parser.add_argument('--log_dir', default='logs/',
                         help="Directory containing the Logs")
-    parser.add_argument('--restore_latest', default=False, action='store_true',
+    parser.add_argument('--restore_latest', default=False,
                         help="Restart the model from the last Checkpoint")
-    parser.add_argument('--restore_best', default=False, action='store_true',
+    parser.add_argument('--restore_best', default=False,
                         help="Restart the model from the best Checkpoint")
     parser.add_argument('--finetune', default=False, action='store_true',
                         help="unfreeze last layers of base model")
@@ -93,31 +94,34 @@ if __name__ == '__main__':
         'train': 'ELP_train.cache',
         'val': 'ELP_val.cache'
     }
-    train_ds, val_ds, N = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, cache_files)
+    # train_ds, val_ds, N = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, cache_files)
+    train_ds, N_train = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, 'train', cache_files)
+    val_ds, N_val = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, 'val', cache_files)
+
+    RUN_DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     # Tensorboard callback
     # tensorboard serve --logdir logs/ --port 8080
-    log_dir = args.log_dir + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = str(Path(args.log_dir) / RUN_DATETIME_STR)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False)
 
-    train_size = int(N * params['train_size'])
-    STEPS_PER_EPOCH = math.ceil(train_size / params['batch_size'])
+    STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size'])
 
     # Save model weights callback function
-    latest_checkpoint_path = "latest_model/cp.ckpt"
-    latest_checkpoint_dir = os.path.dirname(latest_checkpoint_path)
+    filepath = str(Path('latest_models') / RUN_DATETIME_STR / 'model.ckpt')
+    filepath.parent.mkdir(parents=True, exist_ok=True)
     latest_cp_callback = tf.keras.callbacks.ModelCheckpoint(
         monitor='val_loss',
-        filepath=latest_checkpoint_dir,
+        filepath=filepath,
         save_weights_only=False,
         verbose=1,
         save_freq=int(args.save_freq * STEPS_PER_EPOCH))
 
-    best_checkpoint_path = "best_weights/cp.ckpt"
-    best_checkpoint_dir = os.path.dirname(best_checkpoint_path)
+    filepath = str(Path('best_weights') / RUN_DATETIME_STR / 'weights.ckpt')
+    filepath.parent.mkdir(parents=True, exist_ok=True)
     best_cp_callback = tf.keras.callbacks.ModelCheckpoint(
         monitor='val_loss',
-        filepath=best_checkpoint_dir,
+        filepath=filepath,
         save_weights_only=True,
         verbose=1,
         mode='min',
@@ -127,7 +131,8 @@ if __name__ == '__main__':
     siamese_model.compile(optimizer=optimizers.Adam(params['lr']))
 
     if args.restore_best:
-        siamese_model.load_weights('best_weights')
+        weights_path = str(Path(args.restore_best) / 'weights.ckpt')
+        siamese_model.load_weights(weights_path)
         print('loaded weights')
 
     if args.restore_latest:
