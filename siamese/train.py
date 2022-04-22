@@ -9,6 +9,7 @@ from pathlib import Path
 from model import get_model
 from triplet_loss import batch_all_triplet_loss
 from data import get_dataset, get_ELEP_images_and_labels
+from metrics import get_kernel_mask, val
 
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -19,6 +20,7 @@ from tensorflow.keras.models import load_model
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
+
 class SiameseModel(Model):
     def __init__(self, params, finetune):
         super().__init__()
@@ -27,6 +29,7 @@ class SiameseModel(Model):
         self.siamese_network = get_model(params, finetune)
         self.custom_loss = batch_all_triplet_loss
         self.loss_tracker = metrics.Mean(name="loss")
+        self.val_rate_tracker = metrics.Mean(name="VAL")
 
     def call(self, inputs):
         return self.siamese_network(inputs)
@@ -34,7 +37,8 @@ class SiameseModel(Model):
     def train_step(self, data):
         images, labels = data
         with tf.GradientTape() as tape:
-            loss = self._compute_loss(images, labels) + sum(self.siamese_network.losses)
+            loss, embeddings = self._compute_loss(images, labels)
+            loss = loss + sum(self.siamese_network.losses)
 
         # Storing the gradients of the loss function with respect to the
         # weights/parameters.
@@ -47,20 +51,26 @@ class SiameseModel(Model):
 
         # Let's update and return the training loss metric.
         self.loss_tracker.update_state(loss)
-        return {"loss": self.loss_tracker.result()}
+        return {"loss": self.loss_tracker.result(), "VAL": self.val_rate_tracker.result()}
 
     def test_step(self, data):
         images, labels = data
-        loss = self._compute_loss(images, labels)
+        loss, embeddings = self._compute_loss(images, labels)
+
+        # compute Validation Rate metric
+        K, mask = get_kernel_mask(labels.numpy(), embeddings.numpy())
+        d = self.params['margin'] if self.params['squared'] else self.params['margin']**2
+        val_rate = val(K, mask, d, include_diag=True)
+        self.val_rate_tracker.update_state(val_rate)
 
         # Let's update and return the loss metric.
         self.loss_tracker.update_state(loss)
-        return {"loss": self.loss_tracker.result()}
+        return {"loss": self.loss_tracker.result(), "VAL": self.val_rate_tracker.result()}
 
     def _compute_loss(self, images, labels):
         embeddings = self.siamese_network(images)
         embeddings = tf.math.l2_normalize(embeddings, axis=1, epsilon=1e-10)
-        return self.custom_loss(labels, embeddings, self.params['margin'], self.params['squared'])
+        return self.custom_loss(labels, embeddings, self.params['margin'], self.params['squared']), embeddings
 
 
 if __name__ == '__main__':
@@ -129,7 +139,7 @@ if __name__ == '__main__':
         save_best_only=True)
 
     siamese_model = SiameseModel(params, args.finetune)
-    siamese_model.compile(optimizer=optimizers.Adam(params['lr']))
+    siamese_model.compile(optimizer=optimizers.Adam(params['lr']), run_eagerly=True)
 
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')
