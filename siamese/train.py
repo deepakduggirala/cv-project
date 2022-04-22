@@ -91,8 +91,8 @@ if __name__ == '__main__':
         params = json.load(f)
 
     cache_files = {
-        'train': 'ELP_train.cache',
-        'val': 'ELP_val.cache'
+        'train': str(Path(args.data_dir) / 'train.cache'),
+        'val': str(Path(args.data_dir) / 'val.cache')
     }
     # train_ds, val_ds, N = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, cache_files)
     train_ds, N_train = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, 'train', cache_files)
