@@ -6,5 +6,6 @@
   "margin": 0.5,
   "squared": false,
   "embedding_size": 256,
-  "lr": 0.0001
+  "lr": 0.0001,
+  "dense_l2_reg_c": 0.01
 }

@@ -39,5 +39,7 @@ def get_model(params, finetune=False):
 
     inputs = tf.keras.Input(shape=(params['image_size'], params['image_size'], 3))
     x = base_model(inputs, training=False)
-    embedding_layer = tf.keras.layers.Dense(units=params['embedding_size'])(x)
+    embedding_layer = tf.keras.layers.Dense(
+        units=params['embedding_size'],
+        kernel_regularizer=tf.keras.regularizers.L2(params['dense_l2_reg_c']))(x)
     return tf.keras.Model(inputs, embedding_layer)
