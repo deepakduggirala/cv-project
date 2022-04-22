@@ -13,4 +13,4 @@
 module load deeplearning/2.8.0
 
 #Run your program
-python evaluate.py --data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped/train' --weights=best_weights/20220422-024301/weights.ckpt
+python evaluate.py --data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped' --weights=best_weights/20220422-105159/weights.ckpt

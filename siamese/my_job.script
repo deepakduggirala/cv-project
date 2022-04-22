@@ -13,4 +13,4 @@
 module load deeplearning/2.8.0
 
 #Run your program
-python train.py --epochs=20 --data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped' --finetune --restore_best=best_weights/20220422-023309
+python train.py --epochs=40 --data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped' --finetune --restore_best=best_weights/20220422-123035

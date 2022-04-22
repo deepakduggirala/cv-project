@@ -8,5 +8,5 @@
   "squared": true,
   "embedding_size": 256,
   "lr": 0.0001,
-  "dense_l2_reg_c": 0.01
+  "dense_l2_reg_c": 0.0003
 }
