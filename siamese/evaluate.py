@@ -28,6 +28,8 @@ if __name__ == '__main__':
     with open(args.params, 'rb') as f:
         params = json.load(f)
 
+    print(params)
+
     siamese_model = SiameseModel(params, True)
     # siamese_model.compile(optimizer=optimizers.Adam(params['lr']))
     siamese_model.load_weights(args.weights)
@@ -35,7 +37,7 @@ if __name__ == '__main__':
     # input_shape = (None, params['image_size'], params['image_size'], 3)
     # siamese_model.compute_output_shape(input_shape=input_shape)
 
-    images, labels = get_eval_dataset(get_zoo_elephants_images_and_labels, params, args.data_dir)
+    images, labels = get_eval_dataset(get_ELEP_images_and_labels, params, args.data_dir)
 
     embeddings = siamese_model.predict(images)
     embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=1)

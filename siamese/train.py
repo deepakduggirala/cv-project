@@ -19,7 +19,6 @@ from tensorflow.keras.models import load_model
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-
 class SiameseModel(Model):
     def __init__(self, params, finetune):
         super().__init__()
@@ -35,7 +34,7 @@ class SiameseModel(Model):
     def train_step(self, data):
         images, labels = data
         with tf.GradientTape() as tape:
-            loss = self._compute_loss(images, labels)
+            loss = self._compute_loss(images, labels) + sum(self.siamese_network.losses)
 
         # Storing the gradients of the loss function with respect to the
         # weights/parameters.
@@ -90,6 +89,8 @@ if __name__ == '__main__':
     with open(args.params, 'rb') as f:
         params = json.load(f)
 
+    print(params)
+
     cache_files = {
         'train': 'ELP_train.cache',
         'val': 'ELP_val.cache'
@@ -105,23 +106,23 @@ if __name__ == '__main__':
     log_dir = str(Path(args.log_dir) / RUN_DATETIME_STR)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False)
 
-    STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size']['train'])
+    # STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size']['train'])
 
-    # Save model weights callback function
-    filepath = str(Path('latest_models') / RUN_DATETIME_STR / 'model.ckpt')
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    latest_cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        monitor='val_loss',
-        filepath=filepath,
-        save_weights_only=False,
-        verbose=1,
-        save_freq=int(args.save_freq * STEPS_PER_EPOCH))
+    # # Save model weights callback function
+    # filepath = Path('latest_models') / RUN_DATETIME_STR / 'model.ckpt'
+    # filepath.parent.mkdir(parents=True, exist_ok=True)
+    # latest_cp_callback = tf.keras.callbacks.ModelCheckpoint(
+    #     monitor='val_loss',
+    #     filepath=str(filepath),
+    #     save_weights_only=False,
+    #     verbose=1,
+    #     save_freq=int(args.save_freq * STEPS_PER_EPOCH))
 
-    filepath = str(Path('best_weights') / RUN_DATETIME_STR / 'weights.ckpt')
+    filepath = Path('best_weights') / RUN_DATETIME_STR / 'weights.ckpt'
     filepath.parent.mkdir(parents=True, exist_ok=True)
     best_cp_callback = tf.keras.callbacks.ModelCheckpoint(
         monitor='val_loss',
-        filepath=filepath,
+        filepath=str(filepath),
         save_weights_only=True,
         verbose=1,
         mode='min',
@@ -146,4 +147,4 @@ if __name__ == '__main__':
     siamese_model.fit(train_ds,
                       epochs=args.epochs,
                       validation_data=val_ds,
-                      callbacks=[latest_cp_callback, best_cp_callback, tensorboard_callback])
+                      callbacks=[best_cp_callback, tensorboard_callback])

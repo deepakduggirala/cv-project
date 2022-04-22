@@ -5,7 +5,7 @@
     "val": 512
   },
   "margin": 0.25,
-  "squared": false,
+  "squared": true,
   "embedding_size": 256,
   "lr": 0.0001,
   "dense_l2_reg_c": 0.01

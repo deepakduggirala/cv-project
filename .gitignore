@@ -3,3 +3,5 @@ __pycache__
 *.cache.*
 best_weights
 latest_models
+filename_*
+logs

@@ -58,7 +58,7 @@ def get_eval_dataset(f, params, dir_path, mode='val'):
     image_paths, image_labels = f(dir_path)
     N = len(image_labels)
 
-    AUTOTUNE = tf.data.experimental.AUTOTUNE
+    AUTOTUNE = tf.data.AUTOTUNE
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
     dataset = dataset.map(lambda x: parse_image_function(
         x, params['image_size'], augment=False), num_parallel_calls=tf.data.AUTOTUNE)
