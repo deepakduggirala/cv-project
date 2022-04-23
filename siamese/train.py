@@ -7,9 +7,8 @@ import math
 from pathlib import Path
 
 from model import get_model
-from triplet_loss import batch_all_triplet_loss
+from triplet_loss import batch_all_triplet_loss, val, far
 from data import get_dataset, get_ELEP_images_and_labels
-from metrics import get_kernel_mask, val
 
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -28,8 +27,11 @@ class SiameseModel(Model):
         self.finetune = finetune
         self.siamese_network = get_model(params, finetune)
         self.custom_loss = batch_all_triplet_loss
+        self.val_metric = val
+        self.far_metric = far
         self.loss_tracker = metrics.Mean(name="loss")
         self.val_rate_tracker = metrics.Mean(name="VAL")
+        self.far_rate_tracker = metrics.Mean(name="FAR")
 
     def call(self, inputs):
         return self.siamese_network(inputs)
@@ -49,23 +51,30 @@ class SiameseModel(Model):
             zip(gradients, self.siamese_network.trainable_weights)
         )
 
+        val_rate = self.val_metric(labels, embeddings, d=self.params['val_rate_d'],  squared=self.params['squared'])
+        self.val_rate_tracker.update_state(val_rate)
+
+        far_rate = self.far_metric(labels, embeddings, d=self.params['val_rate_d'],  squared=self.params['squared'])
+        self.far_rate_tracker.update_state(far_rate)
+
         # Let's update and return the training loss metric.
         self.loss_tracker.update_state(loss)
-        return {"loss": self.loss_tracker.result(), "VAL": self.val_rate_tracker.result()}
+        return {"loss": self.loss_tracker.result(), "VAL": self.val_rate_tracker.result(), "FAR": self.far_rate_tracker.result()}
 
     def test_step(self, data):
         images, labels = data
         loss, embeddings = self._compute_loss(images, labels)
 
         # compute Validation Rate metric
-        K, mask = get_kernel_mask(labels.numpy(), embeddings.numpy())
-        d = self.params['margin'] if self.params['squared'] else self.params['margin']**2
-        val_rate = val(K, mask, d, include_diag=True)
+        val_rate = self.val_metric(labels, embeddings, d=self.params['val_rate_d'],  squared=self.params['squared'])
         self.val_rate_tracker.update_state(val_rate)
+
+        far_rate = self.far_metric(labels, embeddings, d=self.params['val_rate_d'],  squared=self.params['squared'])
+        self.far_rate_tracker.update_state(far_rate)
 
         # Let's update and return the loss metric.
         self.loss_tracker.update_state(loss)
-        return {"loss": self.loss_tracker.result(), "VAL": self.val_rate_tracker.result()}
+        return {"loss": self.loss_tracker.result(), "VAL": self.val_rate_tracker.result(), "FAR": self.far_rate_tracker.result()}
 
     def _compute_loss(self, images, labels):
         embeddings = self.siamese_network(images)

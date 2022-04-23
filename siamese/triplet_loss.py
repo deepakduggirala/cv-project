@@ -98,7 +98,6 @@ def _get_triplet_mask(labels):
 
     distinct_indices = tf.logical_and(tf.logical_and(i_not_equal_j, i_not_equal_k), j_not_equal_k)
 
-
     # Check if labels[i] == labels[j] and labels[i] != labels[k]
     label_equal = tf.equal(tf.expand_dims(labels, 0), tf.expand_dims(labels, 1))
     i_equal_j = tf.expand_dims(label_equal, 2)
@@ -158,7 +157,6 @@ def batch_all_triplet_loss(labels, embeddings, margin=100, squared=False):
     triplet_loss = tf.reduce_sum(triplet_loss) / (num_positive_triplets + 1e-16)
 
     # triplet_loss = tf.reduce_sum(triplet_loss) / (num_valid_triplets + 1e-16)
-    
 
     return triplet_loss
 
@@ -190,7 +188,7 @@ def batch_hard_triplet_loss(labels, embeddings, margin=10, squared=False):
     hardest_positive_dist = tf.reduce_max(anchor_positive_dist, axis=1, keepdims=True)
     hard_positive_indices = tf.math.argmax(anchor_positive_dist, axis=1)
     tf.summary.scalar("hardest_positive_dist", tf.reduce_mean(hardest_positive_dist))
-    
+
     for i in hard_positive_indices.numpy():
         print((labels[i]).numpy())
 
@@ -209,10 +207,9 @@ def batch_hard_triplet_loss(labels, embeddings, margin=10, squared=False):
 
     # Combine biggest d(a, p) and smallest d(a, n) into final triplet loss
     triplet_loss = tf.maximum(hardest_positive_dist - hardest_negative_dist + margin, 0.0)
-    
+
     # Get final mean triplet loss
     triplet_loss = tf.reduce_mean(triplet_loss)
-    
 
     return triplet_loss
 
@@ -230,7 +227,7 @@ def adapted_triplet_loss(labels, embeddings, lambda_=1, margin=10, squared=False
     Returns:
         adaptive_triplet_loss: scalar tensor containing the triplet loss (L = L_triplet + λ ∗ L_match)
     """
-    
+
     # Get the pairwise distance matrix
     pairwise_dist = _pairwise_distances(embeddings, squared=squared)
 
@@ -263,10 +260,10 @@ def adapted_triplet_loss(labels, embeddings, lambda_=1, margin=10, squared=False
 
     # Combine biggest d(a, p) and smallest d(a, n) into final triplet loss
     triplet_loss = tf.maximum(hardest_positive_dist - hardest_negative_dist + margin, 0.0)
-    
+
     # Get final mean triplet loss
     L_triplet = tf.reduce_mean(triplet_loss)
-    
+
     # Embeding dict stores the mean of all embeddings of each instance
     embedding_dict = dict()
     for i in range(len(labels)):
@@ -274,41 +271,70 @@ def adapted_triplet_loss(labels, embeddings, lambda_=1, margin=10, squared=False
             embedding_dict[labels[i].numpy()] = [embeddings[i]]
         else:
             embedding_dict[labels[i].numpy()].append(embeddings[i])
-            
+
     # Taking mean of the embeddings in embedding_dict
     for label in embedding_dict:
         embedding_dict[label] = tf.math.reduce_mean(embedding_dict[label], axis=0)
-        
+
     # L_match_dict stores the mean of embeddings of the instances choosen in the triplet selections
     L_match_dict = dict()
-    
+
     # Adding instances from hard positives
     for i in hard_positive_indices.numpy():
         if labels[i].numpy() not in L_match_dict:
             L_match_dict[labels[i].numpy()] = [embeddings[i]]
         else:
             L_match_dict[labels[i].numpy()].append(embeddings[i])
-            
+
     # Adding instances from hard negatives
     for i in hard_negative_indices.numpy():
         if labels[i].numpy() not in L_match_dict:
             L_match_dict[labels[i].numpy()] = [embeddings[i]]
         else:
             L_match_dict[labels[i].numpy()].append(embeddings[i])
-            
+
     # Taking mean of the embeddings in L_match_dict
     for label in L_match_dict:
         L_match_dict[label] = tf.math.reduce_mean(L_match_dict[label], axis=0)
-        
+
     # Find L Match using sum of l2 norm of L_triplet - L_match_dict
     l2_norms = []
     for ind in L_match_dict:
         l2_norm = np.linalg.norm(embedding_dict[ind] - L_match_dict[ind], ord=2)
         l2_norms.append(l2_norm)
     l2_norms = np.sum(l2_norms)
-    
+
     # Calculate triplet loss, triplet loss = L_triplet + λ ∗ L_match
     triplet_loss = L_triplet + (lambda_*l2_norms)
-    
+
     return triplet_loss
-        
+
+
+def val(labels, embeddings, d, squared=False):
+    pairwise_dist = _pairwise_distances(embeddings, squared=squared)
+    mask_anchor_positive = _get_anchor_positive_triplet_mask(labels)
+    mask_anchor_positive = tf.cast(mask_anchor_positive, dtype=tf.float32)
+    anchor_positive_dist = tf.multiply(mask_anchor_positive, pairwise_dist)
+
+    valid_pairs = tf.reduce_sum(mask_anchor_positive)
+    false_rejects = tf.reduce_sum(tf.cast(tf.greater(anchor_positive_dist, d), dtype=tf.float32))
+    true_accepts = valid_pairs - false_rejects
+
+    # tf.print(valid_pairs, false_rejects, true_accepts)
+
+    return true_accepts/valid_pairs
+
+
+def far(labels, embeddings, d, squared=False):
+    pairwise_dist = _pairwise_distances(embeddings, squared=squared)
+    mask_anchor_negative = _get_anchor_negative_triplet_mask(labels)
+    mask_anchor_negative = tf.cast(mask_anchor_negative, dtype=tf.float32)
+    anchor_negative_dist = tf.multiply(mask_anchor_negative, pairwise_dist)
+
+    invalid_pairs = tf.reduce_sum(mask_anchor_negative)
+    true_reject = tf.reduce_sum(tf.cast(tf.greater(anchor_negative_dist, d), dtype=tf.float32))
+    false_accepts = invalid_pairs - true_reject
+
+    # tf.print(valid_pairs, false_rejects, true_accepts)
+
+    return false_accepts/invalid_pairs
