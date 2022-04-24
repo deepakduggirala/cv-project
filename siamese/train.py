@@ -7,7 +7,7 @@ import math
 from pathlib import Path
 
 from model import get_model
-from triplet_loss import batch_all_triplet_loss, val, far
+from triplet_loss import batch_all_triplet_loss, val, far, batch_hard_triplet_loss, adapted_triplet_loss
 from data import get_dataset, get_ELEP_images_and_labels
 
 import tensorflow as tf
@@ -33,6 +33,15 @@ class SiameseModel(Model):
         self.val_rate_tracker = metrics.Mean(name="VAL")
         self.far_rate_tracker = metrics.Mean(name="FAR")
 
+        if self.params['triplet_strategy'] == "batch_all":
+            self.custom_loss = batch_all_triplet_loss
+            
+        elif self.params['triplet_strategy'] == "batch_hard":
+            self.custom_loss = batch_hard_triplet_loss
+            
+        elif self.params['triplet_strategy'] == "batch_adaptive":
+            self.custom_loss = adapted_triplet_loss
+
     def call(self, inputs):
         return self.siamese_network(inputs)
 
@@ -51,10 +60,10 @@ class SiameseModel(Model):
             zip(gradients, self.siamese_network.trainable_weights)
         )
 
-        val_rate = self.val_metric(labels, embeddings, d=self.params['val_rate_d'],  squared=self.params['squared'])
+        val_rate = self.val_metric(labels, embeddings, d=self.params['metrics_d'],  squared=self.params['squared'])
         self.val_rate_tracker.update_state(val_rate)
 
-        far_rate = self.far_metric(labels, embeddings, d=self.params['val_rate_d'],  squared=self.params['squared'])
+        far_rate = self.far_metric(labels, embeddings, d=self.params['metrics_d'],  squared=self.params['squared'])
         self.far_rate_tracker.update_state(far_rate)
 
         # Let's update and return the training loss metric.
@@ -66,10 +75,10 @@ class SiameseModel(Model):
         loss, embeddings = self._compute_loss(images, labels)
 
         # compute Validation Rate metric
-        val_rate = self.val_metric(labels, embeddings, d=self.params['val_rate_d'],  squared=self.params['squared'])
+        val_rate = self.val_metric(labels, embeddings, d=self.params['metrics_d'],  squared=self.params['squared'])
         self.val_rate_tracker.update_state(val_rate)
 
-        far_rate = self.far_metric(labels, embeddings, d=self.params['val_rate_d'],  squared=self.params['squared'])
+        far_rate = self.far_metric(labels, embeddings, d=self.params['metrics_d'],  squared=self.params['squared'])
         self.far_rate_tracker.update_state(far_rate)
 
         # Let's update and return the loss metric.
@@ -110,6 +119,9 @@ if __name__ == '__main__':
 
     print(params)
 
+    RUN_DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    print('\n', RUN_DATETIME_STR, '\n')
+
     cache_files = {
         'train': str(Path(args.data_dir) / 'train.cache'),
         'val': str(Path(args.data_dir) / 'val.cache')
@@ -118,14 +130,14 @@ if __name__ == '__main__':
     train_ds, N_train = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, 'train', cache_files)
     val_ds, N_val = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, 'val', cache_files)
 
-    RUN_DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    
 
     # Tensorboard callback
     # tensorboard serve --logdir logs/ --port 8080
     log_dir = str(Path(args.log_dir) / RUN_DATETIME_STR)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False)
 
-    # STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size']['train'])
+    STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size']['train'])
 
     # # Save model weights callback function
     # filepath = Path('latest_models') / RUN_DATETIME_STR / 'model.ckpt'
@@ -140,25 +152,46 @@ if __name__ == '__main__':
     filepath = Path('best_weights') / RUN_DATETIME_STR / 'weights.ckpt'
     filepath.parent.mkdir(parents=True, exist_ok=True)
     best_cp_callback = tf.keras.callbacks.ModelCheckpoint(
+        monitor='val_VAL',
+        filepath=str(filepath),
+        save_weights_only=True,
+        verbose=1,
+        mode='max',
+        save_best_only=True)
+
+    filepath = Path('latest_weights') / RUN_DATETIME_STR / 'weights.ckpt'
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    latest_cp_callback = tf.keras.callbacks.ModelCheckpoint(
         monitor='val_loss',
         filepath=str(filepath),
         save_weights_only=True,
         verbose=1,
-        mode='min',
-        save_best_only=True)
+        save_freq=int(args.save_freq * STEPS_PER_EPOCH))
 
     siamese_model = SiameseModel(params, args.finetune)
-    siamese_model.compile(optimizer=optimizers.Adam(params['lr']), run_eagerly=True)
+
+    # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    #   params['lr'],
+    #   decay_steps=params['decay_steps'], 
+    #   decay_rate=params['decay_rate'], 
+    #   staircase=True)
+    # siamese_model.compile(optimizer=optimizers.SGD(learning_rate = lr_schedule))
+    siamese_model.compile(optimizer=optimizers.Adam(learning_rate =  params['lr']))
 
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')
         siamese_model.load_weights(weights_path)
-        print('loaded weights')
+        print('loaded best weights')
 
     if args.restore_latest:
-        siamese_model = load_model('latest_model', compile=False)
-        siamese_model.compile(optimizer=optimizers.Adam(params['lr']))
-        print('loaded model')
+        weights_path = str(Path(args.restore_latest) / 'weights.ckpt')
+        siamese_model.load_weights(weights_path)
+        print('loaded latest weights')
+
+    # if args.restore_latest:
+    #     siamese_model = load_model('latest_model', compile=False)
+    #     siamese_model.compile(optimizer=optimizers.Adam(params['lr']))
+    #     print('loaded model')
 
     input_shape = (None, params['image_size'], params['image_size'], 3)
     siamese_model.compute_output_shape(input_shape=input_shape)
@@ -166,4 +199,4 @@ if __name__ == '__main__':
     siamese_model.fit(train_ds,
                       epochs=args.epochs,
                       validation_data=val_ds,
-                      callbacks=[best_cp_callback, tensorboard_callback])
+                      callbacks=[latest_cp_callback, best_cp_callback, tensorboard_callback])
