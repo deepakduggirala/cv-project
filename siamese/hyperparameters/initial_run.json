@@ -7,10 +7,13 @@
   "margin": 0.5,
   "squared": false,
   "embedding_size": 256,
+  "use_avg_pool": false,
+  "dropout1_rate": 0.3,
+  "dropout2_rate": 0.3,
   "lr": 0.0001,
   "decay_steps": 13,
   "decay_rate": 0.96,
   "dense_l2_reg_c": 0.01,
   "metrics_d": 1.25,
-  "triplet_strategy": "batch_hard"
+  "triplet_strategy": "batch_all"
 }

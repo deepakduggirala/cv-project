@@ -24,8 +24,7 @@ import tensorflow as tf
 def get_model(params, finetune=False):
     base_model = tf.keras.applications.ResNet50V2(include_top=False,
                                                   weights="imagenet",
-                                                  input_shape=(params['image_size'], params['image_size'], 3),
-                                                  pooling='avg')
+                                                  input_shape=(params['image_size'], params['image_size'], 3))
 
     if finetune:
         # Freeze all weight till layer conv5_block1_out
@@ -37,9 +36,27 @@ def get_model(params, finetune=False):
     else:
         base_model.trainable = False
 
+    # inputs = tf.keras.Input(shape=(params['image_size'], params['image_size'], 3))
+    # x = base_model(inputs, training=False)
+    # embedding_layer = tf.keras.layers.Dense(
+    #     units=params['embedding_size'],
+    #     kernel_regularizer=tf.keras.regularizers.L2(params['dense_l2_reg_c']))(x)
+    # return tf.keras.Model(inputs, embedding_layer)
+
     inputs = tf.keras.Input(shape=(params['image_size'], params['image_size'], 3))
     x = base_model(inputs, training=False)
-    embedding_layer = tf.keras.layers.Dense(
-        units=params['embedding_size'],
-        kernel_regularizer=tf.keras.regularizers.L2(params['dense_l2_reg_c']))(x)
+    if params['use_avg_pool']:
+        flatten = tf.keras.layers.GlobalAveragePooling2D()(x)
+    else:
+        dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(8, 8), activation='relu')(x)
+        flatten = tf.keras.layers.Flatten()(dw_conv)
+    dropout1 = tf.keras.layers.Dropout(rate=params['dropout1_rate'])(flatten)
+
+    if params['embedding_size'] < 256:
+        dense1 = tf.keras.layers.Dense(units=512, activation='relu')(dropout1)
+        dropout2 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(dense1)
+        embedding_layer = tf.keras.layers.Dense(units=params['embedding_size'])(dropout2)
+    else:
+        embedding_layer = tf.keras.layers.Dense(units=params['embedding_size'])(dropout1)
+
     return tf.keras.Model(inputs, embedding_layer)
