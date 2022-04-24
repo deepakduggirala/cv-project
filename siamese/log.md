@@ -169,6 +169,37 @@ Namespace(data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped', epochs=40, finetu
 - without finetunning
 
 
+###  20220423-202421 
+
+```
+Namespace(data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped', epochs=200, finetune=True, log_dir='logs/', params='hyperparameters/initial_run.json', restore_best=False, restore_latest='latest_weights/20220423-201501', save_freq=20)
+{'image_size': 256, 'batch_size': {'train': 128, 'val': 512}, 'margin': 0.5, 'squared': False, 'embedding_size': 256, 'lr': 0.0001, 'decay_steps': 13, 'decay_rate': 0.96, 'dense_l2_reg_c': 0.01, 'metrics_d': 1.25}
+```
+
+- Continued training on pevious weights
+- D=256
+-Val_VAL =0.78 is the highest than all. 2dn best is with D=128
+
+
+###  20220423-223813
+```
+Namespace(data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped', epochs=200, finetune=True, log_dir='logs/', params='hyperparameters/initial_run.json', restore_best=False, restore_latest='latest_weights/20220423-223246', save_freq=20)
+{'image_size': 256, 'batch_size': {'train': 128, 'val': 512}, 'margin': 0.5, 'squared': False, 'embedding_size': 256, 'use_avg_pool': False, 'dropout1_rate': 0.3, 'dropout2_rate': 0.3, 'lr': 0.0001, 'decay_steps': 13, 'decay_rate': 0.96, 'dense_l2_reg_c': 0.01, 'metrics_d': 1.25, 'triplet_strategy': 'batch_all'}
+```
+- D=256 with dropout of 0.3
+
+###  20220423-225016 
+```
+Namespace(data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped', epochs=200, finetune=True, log_dir='logs/', params='hyperparameters/initial_run.json', restore_best=False, restore_latest='latest_weights/20220423-223246', save_freq=20)
+{'image_size': 256, 'batch_size': {'train': 128, 'val': 512}, 'margin': 0.5, 'squared': False, 'embedding_size': 256, 'use_avg_pool': False, 'dropout1_rate': 0.8, 'dropout2_rate': 0.3, 'lr': 0.0001, 'decay_steps': 13, 'decay_rate': 0.96, 'dense_l2_reg_c': 0.01, 'metrics_d': 1.25, 'triplet_strategy': 'batch_all'}
+```
+- D=256 with dropout of 0.8
+
+
+
+
+
+
 
 
 

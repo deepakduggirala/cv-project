@@ -8,7 +8,7 @@
   "squared": false,
   "embedding_size": 256,
   "use_avg_pool": false,
-  "dropout1_rate": 0.3,
+  "dropout1_rate": 0.8,
   "dropout2_rate": 0.3,
   "lr": 0.0001,
   "decay_steps": 13,

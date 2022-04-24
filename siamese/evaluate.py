@@ -9,12 +9,14 @@ from metrics import get_kernel_mask, val, far, pairwise_accuracy
 
 from tensorflow.keras import optimizers
 
+print('start')
+
 # python evaluate.py --weights=/Users/deepakduggirala/Downloads/best_weights --data_dir=/Users/deepakduggirala/Documents/Elephants-dataset-cropped-png-1024
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', default=0.25,
+    parser.add_argument('-d', default=1.25,
                         help="Squared euclidean distance threshold")
     parser.add_argument('--params', default='hyperparameters/initial_run.json',
                         help="JSON file with parameters")
@@ -38,7 +40,11 @@ if __name__ == '__main__':
     # input_shape = (None, params['image_size'], params['image_size'], 3)
     # siamese_model.compute_output_shape(input_shape=input_shape)
 
-    images, labels = get_eval_dataset(get_ELEP_images_and_labels, params, Path(args.data_dir)/'train')
+    cache_files = {
+        'train': str(Path(args.data_dir) / 'train_eval.cache'),
+        'val': str(Path(args.data_dir) / 'val_eval.cache')
+    }
+    images, labels = get_eval_dataset(get_zoo_elephants_images_and_labels, params, Path(args.data_dir), cache_files)
 
     embeddings = siamese_model.predict(images)
     embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=1)
@@ -50,13 +56,13 @@ if __name__ == '__main__':
     print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, args.d))
 
 
-    images, labels = get_eval_dataset(get_ELEP_images_and_labels, params, Path(args.data_dir)/'val')
+    # images, labels = get_eval_dataset(get_ELEP_images_and_labels, params, Path(args.data_dir)/'val')
 
-    embeddings = siamese_model.predict(images)
-    embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=1)
+    # embeddings = siamese_model.predict(images)
+    # embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=1)
 
-    kernel, mask = get_kernel_mask(labels, embeddings)
-    print('Val')
-    print('Validation rate (VAL): ', val(kernel, mask, args.d))
-    print('False accept rate (FAR): ', far(kernel, mask, args.d))
-    print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, args.d))
+    # kernel, mask = get_kernel_mask(labels, embeddings)
+    # print('Val')
+    # print('Validation rate (VAL): ', val(kernel, mask, args.d))
+    # print('False accept rate (FAR): ', far(kernel, mask, args.d))
+    # print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, args.d))
