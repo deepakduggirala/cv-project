@@ -40,29 +40,22 @@ if __name__ == '__main__':
     # input_shape = (None, params['image_size'], params['image_size'], 3)
     # siamese_model.compute_output_shape(input_shape=input_shape)
 
-    cache_files = {
-        'train': str(Path(args.data_dir) / 'train_eval.cache'),
-        'val': str(Path(args.data_dir) / 'val_eval.cache')
-    }
-    images, labels = get_eval_dataset(get_zoo_elephants_images_and_labels, params, Path(args.data_dir), cache_files)
+    cache_file = str(Path(args.data_dir) / 'eval.cache')
+    images, labels = get_eval_dataset(get_zoo_elephants_images_and_labels, params, Path(args.data_dir), cache_file)
 
     embeddings = siamese_model.predict(images)
     embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=1)
 
     kernel, mask = get_kernel_mask(labels, embeddings)
-    print('Train')
-    print('Validation rate (VAL): ', val(kernel, mask, args.d))
-    print('False accept rate (FAR): ', far(kernel, mask, args.d))
-    print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, args.d))
+    d = float(args.d)
+    print('d', d)
+    print('Validation rate (VAL): ', val(kernel, mask, d))
+    print('False accept rate (FAR): ', far(kernel, mask, d))
+    print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, d))
 
-
-    # images, labels = get_eval_dataset(get_ELEP_images_and_labels, params, Path(args.data_dir)/'val')
-
-    # embeddings = siamese_model.predict(images)
-    # embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=1)
-
-    # kernel, mask = get_kernel_mask(labels, embeddings)
-    # print('Val')
-    # print('Validation rate (VAL): ', val(kernel, mask, args.d))
-    # print('False accept rate (FAR): ', far(kernel, mask, args.d))
-    # print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, args.d))
+    for d in np.arange(0.4, 1.4, 0.1):
+        print('d', d)
+        print('Validation rate (VAL): ', val(kernel, mask, d))
+        print('False accept rate (FAR): ', far(kernel, mask, d))
+        print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, d))
+        print('\n\n\n')

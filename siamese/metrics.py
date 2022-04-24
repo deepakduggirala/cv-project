@@ -10,26 +10,32 @@ def get_kernel_mask(labels, embeddings):
     embeddings: N x d normalized image embeddings
     labels: labels associated with image / embeddings
     '''
-    sorted_labels = labels[np.argsort(labels)]
-    enc = OrdinalEncoder()
-    enc.fit(sorted_labels.reshape(-1, 1))
-    categories = enc.transform(sorted_labels.reshape(-1, 1))
-    mask = (categories - categories.T == 0)
+    # sorted_labels = labels[np.argsort(labels)]
+    # enc = OrdinalEncoder()
+    # enc.fit(sorted_labels.reshape(-1, 1))
+    # categories = enc.transform(sorted_labels.reshape(-1, 1))
+    # mask = (categories - categories.T == 0)
 
-    emb_sorted = embeddings[np.argsort(labels)]
-    X_norm_sq = np.sum(emb_sorted**2, axis=1)
-    kernel = X_norm_sq[:, np.newaxis] + X_norm_sq[np.newaxis, :] - 2*np.dot(emb_sorted, emb_sorted.T)
+    # emb_sorted = embeddings[np.argsort(labels)]
+    # X_norm_sq = np.sum(emb_sorted**2, axis=1)
+    # kernel = X_norm_sq[:, np.newaxis] + X_norm_sq[np.newaxis, :] - 2*np.dot(emb_sorted, emb_sorted.T)
+
+    mask = labels.reshape(-1, 1) == labels.reshape(1, -1)
+
+    X_norm_sq = np.sum(embeddings**2, axis=1)
+    kernel = X_norm_sq[:, np.newaxis] + X_norm_sq[np.newaxis, :] - 2*np.dot(embeddings, embeddings.T)
 
     return kernel, mask
 
 
-def val(K, mask, d, include_diag=True):
+def val(K, mask, d, include_diag=False):
     '''
     VAL - Validation rate
     P_same: all possible pairs of images where labels are same
     TA: count of pairs from P_same where squared_distance between embeddings is less than d
     VAL: TA/count(P_same)
     '''
+    N = K.shape[0]
     TA = K[np.where(mask)] < d
     if include_diag:
         return np.sum(TA)/TA.shape[0]

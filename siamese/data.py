@@ -54,7 +54,7 @@ def get_dataset(f, params, dir_path, mode='train', cache_files=None):
     return dataset, N
 
 
-def get_eval_dataset(f, params, dir_path, cache_files, mode='val'):
+def get_eval_dataset(f, params, dir_path, cache_file=None, batch_size=32):
     image_paths, image_labels = f(dir_path)
     N = len(image_labels)
 
@@ -62,7 +62,8 @@ def get_eval_dataset(f, params, dir_path, cache_files, mode='val'):
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
     dataset = dataset.map(lambda x: parse_image_function(
         x, params['image_size'], augment=False), num_parallel_calls=tf.data.AUTOTUNE)
-    # dataset = dataset.cache(cache_files[mode])
+    if cache_file:
+        dataset = dataset.cache(cache_file)
     dataset = dataset.batch(32).prefetch(AUTOTUNE)
 
     return dataset, np.array(image_labels)
