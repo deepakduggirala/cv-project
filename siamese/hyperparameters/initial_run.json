@@ -1,6 +1,7 @@
 {
   "name": "init",
   "image_size": 256,
+  "resize_pad": false,
   "batch_size": {
     "train": 128,
     "val": 512

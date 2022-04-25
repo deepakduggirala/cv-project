@@ -17,12 +17,14 @@ def preprocess_image(image, image_size, augment=True, model_preprocess=True):
     return image
 
 
-def parse_image_function(image_path, image_size):
+def parse_image_function(image_path, image_size, resize_pad=False):
     # print('reading', image_path)
     image_string = tf.io.read_file(image_path)
     image = tf.image.decode_jpeg(image_string, channels=3)
-    # image = tf.image.resize(image, [image_size, image_size])
-    image = tf.image.resize_with_pad(image, target_height=image_size, target_width=image_size)
+    if not resize_pad:
+        image = tf.image.resize(image, [image_size, image_size])
+    else:
+        image = tf.image.resize_with_pad(image, target_height=image_size, target_width=image_size)
     # image = preprocess_image(image, image_size, augment)
     return image
 
@@ -55,7 +57,7 @@ def get_dataset(f, params, dir_path, mode='train', augment=None, cache_files=Non
     AUTOTUNE = tf.data.AUTOTUNE
     dataset = tf.data.Dataset.from_tensor_slices((image_paths, image_labels))
     dataset = dataset.map(lambda x, y: (parse_image_function(
-        x, params['image_size']), y), num_parallel_calls=AUTOTUNE)
+        x, params['image_size'], resize_pad=params['resize_pad']), y), num_parallel_calls=AUTOTUNE)
 
     if cache_files:
         dataset = dataset.cache(cache_files[mode])
@@ -72,18 +74,18 @@ def get_dataset(f, params, dir_path, mode='train', augment=None, cache_files=Non
     return dataset, N
 
 
-def get_eval_dataset(f, params, dir_path, cache_file=None, batch_size=32):
-    image_paths, image_labels = f(dir_path)
-    N = len(image_labels)
+# def get_eval_dataset(f, params, dir_path, cache_file=None, batch_size=32):
+#     image_paths, image_labels = f(dir_path)
+#     N = len(image_labels)
 
-    AUTOTUNE = tf.data.AUTOTUNE
-    dataset = tf.data.Dataset.from_tensor_slices(image_paths)
-    dataset = dataset.map(lambda x: parse_image_function(
-        x, params['image_size']), num_parallel_calls=tf.data.AUTOTUNE)
-    # if cache_file:
-    #     dataset = dataset.cache(cache_file)
-    dataset = dataset.map(lambda x: (preprocess_image(
-        x, params['image_size'], augment=False)), num_parallel_calls=AUTOTUNE)
-    dataset = dataset.batch(32).prefetch(AUTOTUNE)
+#     AUTOTUNE = tf.data.AUTOTUNE
+#     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
+#     dataset = dataset.map(lambda x: parse_image_function(
+#         x, params['image_size']), num_parallel_calls=tf.data.AUTOTUNE)
+#     # if cache_file:
+#     #     dataset = dataset.cache(cache_file)
+#     dataset = dataset.map(lambda x: (preprocess_image(
+#         x, params['image_size'], augment=False)), num_parallel_calls=AUTOTUNE)
+#     dataset = dataset.batch(32).prefetch(AUTOTUNE)
 
-    return dataset, np.array(image_labels)
+#     return dataset, np.array(image_labels)
