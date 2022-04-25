@@ -53,7 +53,7 @@ if __name__ == '__main__':
     print('False accept rate (FAR): ', far(kernel, mask, d))
     print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, d))
 
-    for d in np.arange(0.4, 1.4, 0.1):
+    for d in np.arange(0.1, 1.4, 0.1):
         print('d', d)
         print('Validation rate (VAL): ', val(kernel, mask, d))
         print('False accept rate (FAR): ', far(kernel, mask, d))

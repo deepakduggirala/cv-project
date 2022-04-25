@@ -5,19 +5,24 @@ import numpy as np
 
 
 def preprocess_image(image, image_size, augment=True):
-
-    image = tf.image.resize(image, [image_size, image_size])
     if augment:
         image = tf.image.random_flip_left_right(image)
+        # image = tf.image.random_brightness(image, 0.2)
+        # image = tf.image.random_contrast(image, 0.5, 2.0)
+        # image = tf.image.random_saturation(image, 0.75, 1.25)
+        # image = tf.image.random_hue(image, 0.03)
+
     image = preprocess_input(image)
     return image
 
 
-def parse_image_function(image_path, image_size, augment=True):
-    print('reading', image_path)
+def parse_image_function(image_path, image_size):
+    # print('reading', image_path)
     image_string = tf.io.read_file(image_path)
     image = tf.image.decode_jpeg(image_string, channels=3)
-    image = preprocess_image(image, image_size, augment)
+    # image = tf.image.resize(image, [image_size, image_size])
+    image = tf.image.resize_with_pad(image, target_height=image_size, target_width=image_size)
+    # image = preprocess_image(image, image_size, augment)
     return image
 
 
@@ -48,6 +53,8 @@ def get_dataset(f, params, dir_path, mode='train', cache_files=None):
     dataset = dataset.map(lambda x, y: (parse_image_function(
         x, params['image_size']), y), num_parallel_calls=AUTOTUNE)
     dataset = dataset.cache(cache_files[mode])
+    dataset = dataset.map(lambda x, y: (preprocess_image(
+        x, params['image_size'], augment=(mode=='train')), y), num_parallel_calls=AUTOTUNE)
     dataset = dataset.shuffle(buffer_size=N)
     dataset = dataset.batch(params['batch_size'][mode]).prefetch(AUTOTUNE)
 
@@ -61,9 +68,11 @@ def get_eval_dataset(f, params, dir_path, cache_file=None, batch_size=32):
     AUTOTUNE = tf.data.AUTOTUNE
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
     dataset = dataset.map(lambda x: parse_image_function(
-        x, params['image_size'], augment=False), num_parallel_calls=tf.data.AUTOTUNE)
-    if cache_file:
-        dataset = dataset.cache(cache_file)
+        x, params['image_size']), num_parallel_calls=tf.data.AUTOTUNE)
+    # if cache_file:
+    #     dataset = dataset.cache(cache_file)
+    dataset = dataset.map(lambda x: (preprocess_image(
+        x, params['image_size'], augment=False)), num_parallel_calls=AUTOTUNE)
     dataset = dataset.batch(32).prefetch(AUTOTUNE)
 
     return dataset, np.array(image_labels)

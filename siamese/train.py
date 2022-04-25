@@ -6,7 +6,7 @@ import os
 import math
 from pathlib import Path
 
-from model import get_model
+from model import get_model, get_model_dw
 from triplet_loss import batch_all_triplet_loss, val, far, batch_hard_triplet_loss, adapted_triplet_loss
 from data import get_dataset, get_ELEP_images_and_labels
 
@@ -25,7 +25,10 @@ class SiameseModel(Model):
         super().__init__()
         self.params = params
         self.finetune = finetune
-        self.siamese_network = get_model(params, finetune)
+        if params['depthwise']:
+          self.siamese_network = get_model_dw(params, finetune)
+        else:
+          self.siamese_network = get_model(params, finetune)
         self.custom_loss = batch_all_triplet_loss
         self.val_metric = val
         self.far_metric = far
