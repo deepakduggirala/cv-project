@@ -24,6 +24,7 @@ def get_kernel_mask(labels, embeddings):
 
     X_norm_sq = np.sum(embeddings**2, axis=1)
     kernel = X_norm_sq[:, np.newaxis] + X_norm_sq[np.newaxis, :] - 2*np.dot(embeddings, embeddings.T)
+    kernel = np.sqrt(np.abs(kernel))
 
     return kernel, mask
 

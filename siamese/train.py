@@ -6,7 +6,7 @@ import os
 import math
 from pathlib import Path
 
-from model import get_model, get_model_dw
+from model import get_model, get_model_dw, get_model_dw2
 from triplet_loss import batch_all_triplet_loss, val, far, batch_hard_triplet_loss, adapted_triplet_loss
 from data import get_dataset, get_ELEP_images_and_labels
 
@@ -25,10 +25,7 @@ class SiameseModel(Model):
         super().__init__()
         self.params = params
         self.finetune = finetune
-        if params['depthwise']:
-          self.siamese_network = get_model_dw(params, finetune)
-        else:
-          self.siamese_network = get_model(params, finetune)
+        self.siamese_network = get_model(params, finetune)
         self.custom_loss = batch_all_triplet_loss
         self.val_metric = val
         self.far_metric = far
@@ -38,10 +35,10 @@ class SiameseModel(Model):
 
         if self.params['triplet_strategy'] == "batch_all":
             self.custom_loss = batch_all_triplet_loss
-            
+
         elif self.params['triplet_strategy'] == "batch_hard":
             self.custom_loss = batch_hard_triplet_loss
-            
+
         elif self.params['triplet_strategy'] == "batch_adaptive":
             self.custom_loss = adapted_triplet_loss
 
@@ -130,10 +127,10 @@ if __name__ == '__main__':
         'val': str(Path(args.data_dir) / 'val.cache')
     }
     # train_ds, val_ds, N = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, cache_files)
-    train_ds, N_train = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, 'train', cache_files)
-    val_ds, N_val = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, 'val', cache_files)
-
-    
+    train_ds, N_train = get_dataset(get_ELEP_images_and_labels, params, args.data_dir,
+                                    mode='train', augment=True,  cache_files=cache_files, shuffle=True)
+    val_ds, N_val = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, mode='val',
+                                augment=False, cache_files=cache_files, shuffle=False)
 
     # Tensorboard callback
     # tensorboard serve --logdir logs/ --port 8080
@@ -175,11 +172,11 @@ if __name__ == '__main__':
 
     # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
     #   params['lr'],
-    #   decay_steps=params['decay_steps'], 
-    #   decay_rate=params['decay_rate'], 
+    #   decay_steps=params['decay_steps'],
+    #   decay_rate=params['decay_rate'],
     #   staircase=True)
     # siamese_model.compile(optimizer=optimizers.SGD(learning_rate = lr_schedule))
-    siamese_model.compile(optimizer=optimizers.Adam(learning_rate =  params['lr']))
+    siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
 
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')

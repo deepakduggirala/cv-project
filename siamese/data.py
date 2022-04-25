@@ -4,15 +4,16 @@ from pathlib import Path
 import numpy as np
 
 
-def preprocess_image(image, image_size, augment=True):
+def preprocess_image(image, image_size, augment=True, model_preprocess=True):
     if augment:
         image = tf.image.random_flip_left_right(image)
         # image = tf.image.random_brightness(image, 0.2)
         # image = tf.image.random_contrast(image, 0.5, 2.0)
-        # image = tf.image.random_saturation(image, 0.75, 1.25)
-        # image = tf.image.random_hue(image, 0.03)
-
-    image = preprocess_input(image)
+        image = tf.image.random_saturation(image, 0.75, 1.25)
+        image = tf.image.random_hue(image, 0.05)
+        # image = tf.image.random_jpeg_quality(image, 20, 100)
+    if model_preprocess:
+        image = preprocess_input(image)
     return image
 
 
@@ -28,7 +29,7 @@ def parse_image_function(image_path, image_size):
 
 def get_ELEP_images_and_labels(dir_path):
     root_dir = Path(dir_path)
-    image_paths = [p for p in root_dir.iterdir() if p.suffix in ['.jpg']]
+    image_paths = [p for p in sorted(root_dir.iterdir()) if p.suffix in ['.jpg']]
     image_paths_str = [str(p) for p in image_paths]
     image_labels = [img_path.name.split('_')[0] for img_path in image_paths]
     return image_paths_str, image_labels
@@ -43,7 +44,10 @@ def get_zoo_elephants_images_and_labels(dir_path):
     return list(images_paths), list(image_labels)
 
 
-def get_dataset(f, params, dir_path, mode='train', cache_files=None):
+def get_dataset(f, params, dir_path, mode='train', augment=None, cache_files=None, model_preprocess=True, shuffle=True):
+
+    if augment is None:
+        augment = mode == 'train'
 
     image_paths, image_labels = f(Path(dir_path)/mode)
     N = len(image_labels)
@@ -52,10 +56,17 @@ def get_dataset(f, params, dir_path, mode='train', cache_files=None):
     dataset = tf.data.Dataset.from_tensor_slices((image_paths, image_labels))
     dataset = dataset.map(lambda x, y: (parse_image_function(
         x, params['image_size']), y), num_parallel_calls=AUTOTUNE)
-    dataset = dataset.cache(cache_files[mode])
-    dataset = dataset.map(lambda x, y: (preprocess_image(
-        x, params['image_size'], augment=(mode=='train')), y), num_parallel_calls=AUTOTUNE)
-    dataset = dataset.shuffle(buffer_size=N)
+
+    if cache_files:
+        dataset = dataset.cache(cache_files[mode])
+
+    dataset = dataset.map(
+        lambda x, y: (preprocess_image(x, params['image_size'],
+                                       augment=augment, model_preprocess=model_preprocess), y),
+        num_parallel_calls=AUTOTUNE)
+
+    if shuffle:
+        dataset = dataset.shuffle(buffer_size=N)
     dataset = dataset.batch(params['batch_size'][mode]).prefetch(AUTOTUNE)
 
     return dataset, N

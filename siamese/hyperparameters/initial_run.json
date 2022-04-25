@@ -1,4 +1,5 @@
 {
+  "name": "init",
   "image_size": 256,
   "batch_size": {
     "train": 128,
