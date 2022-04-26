@@ -84,7 +84,7 @@ def get_model_dw2(params, finetune=False):
         # Freeze all weight till layer conv5_block1_out
         trainable = False
         for layer in base_model.layers:
-            if layer.name == "conv5_block1_out":
+            if layer.name == "conv5_block2_out":
                 trainable = True
             layer.trainable = trainable
     else:
@@ -92,12 +92,18 @@ def get_model_dw2(params, finetune=False):
 
     inputs = tf.keras.Input(shape=(params['image_size'], params['image_size'], 3))
     x = base_model(inputs, training=False)
-    conv1x1 = tf.keras.layers.Conv2D(kernel_size=1, filters=256, activation='relu')(x)
-    dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(8, 8))(conv1x1)
+    dropout1 = tf.keras.layers.Dropout(rate=params['dropout1_rate'])(x)
+    
+    conv1x1 = tf.keras.layers.Conv2D(kernel_size=1, filters=256, activation='relu')(dropout1)
+    dropout2 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(conv1x1)
+    
+    dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(8, 8))(dropout2)
     flatten = tf.keras.layers.Flatten()(dw_conv)
+    dropout3 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(flatten)
+    
     embedding_layer = tf.keras.layers.Dense(
         units=params['embedding_size'],
-        kernel_regularizer=tf.keras.regularizers.L2(params['dense_l2_reg_c']))(flatten)
+        kernel_regularizer=tf.keras.regularizers.L2(params['dense_l2_reg_c']))(dropout3)
     return tf.keras.Model(inputs, embedding_layer)
 
 
