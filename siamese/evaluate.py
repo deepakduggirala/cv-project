@@ -40,9 +40,9 @@ if __name__ == '__main__':
     # input_shape = (None, params['image_size'], params['image_size'], 3)
     # siamese_model.compute_output_shape(input_shape=input_shape)
 
-    cache_file = str(Path(args.data_dir) / 'eval.cache')
+    # cache_file = str(Path(args.data_dir) / 'eval.cache')
     images, labels = get_eval_dataset(get_zoo_elephants_images_and_labels, params,
-                                      Path(args.data_dir), cache_file, batch_size=32)
+                                      Path(args.data_dir), cache_file=None, batch_size=32)
 
     embeddings = siamese_model.predict(images)
     embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=1)

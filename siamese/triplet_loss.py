@@ -154,9 +154,9 @@ def batch_all_triplet_loss(labels, embeddings, margin=100, squared=False):
     fraction_positive_triplets = num_positive_triplets / (num_valid_triplets + 1e-16)
 
     # Get final mean triplet loss over the positive valid triplets
-    triplet_loss = tf.reduce_sum(triplet_loss) / (num_positive_triplets + 1e-16)
+    # triplet_loss = tf.reduce_sum(triplet_loss) / (num_positive_triplets + 1e-16)
 
-    # triplet_loss = tf.reduce_sum(triplet_loss) / (num_valid_triplets + 1e-16)
+    triplet_loss = tf.reduce_sum(triplet_loss) / (num_valid_triplets + 1e-16)
 
     return triplet_loss
 
@@ -189,8 +189,8 @@ def batch_hard_triplet_loss(labels, embeddings, margin=10, squared=False):
     hard_positive_indices = tf.math.argmax(anchor_positive_dist, axis=1)
     tf.summary.scalar("hardest_positive_dist", tf.reduce_mean(hardest_positive_dist))
 
-    for i in hard_positive_indices.numpy():
-        print((labels[i]).numpy())
+    # for i in hard_positive_indices.numpy():
+    #     print((labels[i]).numpy())
 
     # For each anchor, get the hardest negative
     # First, we need to get a mask for every valid negative (they should have different labels)

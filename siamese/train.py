@@ -5,6 +5,7 @@ import datetime
 import os
 import math
 from pathlib import Path
+import numpy as np
 
 from model import get_model, get_model_dw, get_model_dw2
 from triplet_loss import batch_all_triplet_loss, val, far, batch_hard_triplet_loss, adapted_triplet_loss
@@ -96,6 +97,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=20, type=int,
                         help="Number epochs to train the model for")
+    parser.add_argument('--epochs2', default=20, type=int,
+                        help="Number epochs to train the model for")
     parser.add_argument('--save_freq', default=20, type=int,
                         help="save model every 'save_freq' epochs")
     parser.add_argument('--params', default='hyperparameters/initial_run.json',
@@ -119,7 +122,7 @@ if __name__ == '__main__':
 
     print(params)
 
-    RUN_DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    RUN_DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '-' +  ''.join(np.random.choice([chr(i) for i in range(48,58)] + [chr(i) for i in range(97,123)], 5))
     print('\n', RUN_DATETIME_STR, '\n')
 
     cache_files = {
@@ -152,11 +155,11 @@ if __name__ == '__main__':
     filepath = Path('best_weights') / RUN_DATETIME_STR / 'weights.ckpt'
     filepath.parent.mkdir(parents=True, exist_ok=True)
     best_cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        monitor='val_VAL',
+        monitor='val_loss',
         filepath=str(filepath),
         save_weights_only=True,
         verbose=1,
-        mode='max',
+        mode='min',
         save_best_only=True)
 
     filepath = Path('latest_weights') / RUN_DATETIME_STR / 'weights.ckpt'
@@ -170,13 +173,13 @@ if __name__ == '__main__':
 
     siamese_model = SiameseModel(params, args.finetune)
 
-    # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-    #   params['lr'],
-    #   decay_steps=params['decay_steps'],
-    #   decay_rate=params['decay_rate'],
-    #   staircase=True)
-    # siamese_model.compile(optimizer=optimizers.SGD(learning_rate = lr_schedule))
-    siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+      params['lr'],
+      decay_steps=params['decay_steps'],
+      decay_rate=params['decay_rate'],
+      staircase=True)
+    siamese_model.compile(optimizer=optimizers.SGD(learning_rate = lr_schedule))
+    # siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
 
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')
@@ -200,3 +203,21 @@ if __name__ == '__main__':
                       epochs=args.epochs,
                       validation_data=val_ds,
                       callbacks=[latest_cp_callback, best_cp_callback, tensorboard_callback])
+
+
+    base_model = siamese_model.siamese_network.layers[1]
+    base_model.trainable = True
+    trainable = False
+    for layer in base_model.layers:
+        if layer.name == "conv5_block2_out":
+            trainable = True
+        layer.trainable = trainable
+
+    # siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
+    siamese_model.fit(train_ds,
+                      epochs=args.epochs2,
+                      validation_data=val_ds,
+                      callbacks=[latest_cp_callback, best_cp_callback, tensorboard_callback])
+    
+
+    

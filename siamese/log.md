@@ -201,3 +201,48 @@ Namespace(data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped', epochs=200, finet
 ### 20220424-181645 - 20220424-183102 - 20220424-184449
 
 Previously in data.py, images are cached after data augmentation is applied
+
+
+
+###  20220425-211419 - 20220425-214400
+```
+Namespace(data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped', epochs=80, finetune=False, log_dir='logs/', params='hyperparameters/depthwise2.json', restore_best=False, restore_latest=False, save_freq=20)
+{'name': 'depthwise2', 'image_size': 256, 'resize_pad': False, 'batch_size': {'train': 128, 'val': 512}, 'margin': 0.5, 'squared': False, 'embedding_size': 256, 'lr': 5e-05, 'decay_steps': 13, 'decay_rate': 0.96, 'dense_l2_reg_c': 0.01, 'metrics_d': 1.1, 'triplet_strategy': 'batch_all'}
+```
+
+overfitted - evaluation on zoo dataset gave 0.5 val and 0.2 FAR for d=1.1
+
+
+### 20220425-223618
+
+images with resize padding, no finetuning
+
+just trained the last few layers, worse than the previous run
+
+
+### 20220425-230956-xuedu
+
+increased batch size to 256
+
+decreased regularizatio to 0.001
+
+added dropput of 0.5 between base model and new layers
+
+results:
+- training VAL rate never reached 1, divergence is less, but val_VAL still the same.
+
+
+### 20220425-234730-58ffs 
+
+added dropout between conv1x1 and depthwise conv as well as between depthwise and fully connected layer. with rate of 0.2.
+
+changed loss function.
+
+reduced learning rate to 0.00001 from 0.00005 and increased epochs to 100 and 100 from 80 and 80.
+
+
+### 20220426-002659-e3ft1
+
+continued from previous weights and train and val diverged initially a lot, because the optimizer state is lost and Adam seems to be taking big steps initially.
+
+
