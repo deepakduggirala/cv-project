@@ -74,18 +74,21 @@ def get_dataset(f, params, dir_path, mode='train', augment=None, cache_files=Non
     return dataset, N
 
 
-# def get_eval_dataset(f, params, dir_path, cache_file=None, batch_size=32):
-#     image_paths, image_labels = f(dir_path)
-#     N = len(image_labels)
+def get_eval_dataset(
+        f, params, dir_path, cache_file=None, batch_size=32):
+    image_paths, image_labels = f(dir_path)
+    N = len(image_labels)
 
-#     AUTOTUNE = tf.data.AUTOTUNE
-#     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
-#     dataset = dataset.map(lambda x: parse_image_function(
-#         x, params['image_size']), num_parallel_calls=tf.data.AUTOTUNE)
-#     # if cache_file:
-#     #     dataset = dataset.cache(cache_file)
-#     dataset = dataset.map(lambda x: (preprocess_image(
-#         x, params['image_size'], augment=False)), num_parallel_calls=AUTOTUNE)
-#     dataset = dataset.batch(32).prefetch(AUTOTUNE)
+    AUTOTUNE = tf.data.AUTOTUNE
+    dataset = tf.data.Dataset.from_tensor_slices(image_paths)
+    dataset = dataset.map(lambda x: parse_image_function(
+        x, params['image_size'], resize_pad=params['resize_pad']), num_parallel_calls=tf.data.AUTOTUNE)
 
-#     return dataset, np.array(image_labels)
+    if cache_file:
+        dataset = dataset.cache(cache_file)
+
+    dataset = dataset.map(lambda x: (preprocess_image(
+        x, params['image_size'], augment=False)), num_parallel_calls=AUTOTUNE)
+    dataset = dataset.batch(batch_size).prefetch(AUTOTUNE)
+
+    return dataset, np.array(image_labels)
