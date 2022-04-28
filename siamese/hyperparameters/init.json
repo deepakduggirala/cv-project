@@ -3,8 +3,8 @@
   "image_size": 256,
   "resize_pad": false,
   "batch_size": {
-    "train": 128,
-    "val": 512
+    "train": 64,
+    "val": 64
   },
   "margin": 0.5,
   "squared": false,

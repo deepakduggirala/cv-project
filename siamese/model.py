@@ -27,12 +27,7 @@ def get_model_init(params, finetune=False):
         params['image_size'], params['image_size'], 3), pooling='avg')
 
     if finetune:
-        # Freeze all weight till layer conv5_block1_out
-        trainable = False
-        for layer in base_model.layers:
-            if layer.name == "conv5_block1_out":
-                trainable = True
-            layer.trainable = trainable
+        base_model = unfreeze_resnet(base_model, from_layer="conv5_block2_out")
     else:
         base_model.trainable = False
 
@@ -49,12 +44,7 @@ def get_model_dw(params, finetune=False):
         params['image_size'], params['image_size'], 3))
 
     if finetune:
-        # Freeze all weight till layer conv5_block1_out
-        trainable = False
-        for layer in base_model.layers:
-            if layer.name == "conv5_block1_out":
-                trainable = True
-            layer.trainable = trainable
+        base_model = unfreeze_resnet(base_model, from_layer="conv5_block2_out")
     else:
         base_model.trainable = False
 
@@ -82,12 +72,7 @@ def get_model_dw2(params, finetune=False):
         params['image_size'], params['image_size'], 3))
 
     if finetune:
-        # Freeze all weight till layer conv5_block1_out
-        trainable = False
-        for layer in base_model.layers:
-            if layer.name == "conv5_block2_out":
-                trainable = True
-            layer.trainable = trainable
+        base_model = unfreeze_resnet(base_model, from_layer="conv5_block2_out")
     else:
         base_model.trainable = False
 
@@ -114,12 +99,7 @@ def inception_model(params, finetune=False):
     base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(s, s, 3))
 
     if finetune:
-        # we chose to train the top 2 inception blocks, i.e. we will freeze
-        # the first 249 layers and unfreeze the rest:
-        for layer in base_model.layers[:249]:
-            layer.trainable = False
-        for layer in base_model.layers[249:]:
-            layer.trainable = True
+        base_model = unfreeze_inception(base_model)
     else:
         for layer in base_model.layers:
             layer.trainable = False
@@ -138,12 +118,7 @@ def inception_model_dw(params, finetune=False):
     base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(s, s, 3))
 
     if finetune:
-        # we chose to train the top 2 inception blocks, i.e. we will freeze
-        # the first 249 layers and unfreeze the rest:
-        for layer in base_model.layers[:249]:
-            layer.trainable = False
-        for layer in base_model.layers[249:]:
-            layer.trainable = True
+        base_model = unfreeze_inception(base_model)
     else:
         for layer in base_model.layers:
             layer.trainable = False
@@ -176,5 +151,35 @@ def get_model(params, finetune=False):
         return inception_model(params, finetune)
     elif params['name'] == 'inceptionv3_dw':
         return inception_model_dw(params, finetune)
+    else:
+        return None
+
+
+def unfreeze_resnet(base_model, from_layer='conv5_block2_out'):
+    # Freeze all weight till layer conv5_block1_out
+    base_model.trainable = True
+    trainable = False
+    for layer in base_model.layers:
+        if layer.name == from_layer:
+            trainable = True
+        layer.trainable = trainable
+    return base_model
+
+
+def unfreeze_inception(base_model):
+    # we chose to train the top 2 inception blocks, i.e. we will freeze
+    # the first 249 layers and unfreeze the rest:
+    for layer in base_model.layers[:249]:
+        layer.trainable = False
+    for layer in base_model.layers[249:]:
+        layer.trainable = True
+    return base_model
+
+
+def enable_finetune(params, base_model, from_layer='conv5_block2_out'):
+    if params['name'] == 'init' or 'depthwise' or 'depthwise2':
+        return unfreeze_resnet(base_model, from_layer)
+    elif params['name'] == 'inceptionv3' or 'inceptionv3_dw':
+        return unfreeze_inception(base_model)
     else:
         return None

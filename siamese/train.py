@@ -7,9 +7,9 @@ import math
 from pathlib import Path
 import numpy as np
 
-from model import get_model, get_model_dw, get_model_dw2
+from model import get_model, enable_finetune
 from triplet_loss import batch_all_triplet_loss, val, far, batch_hard_triplet_loss, adapted_triplet_loss
-from data import get_dataset, get_ELEP_images_and_labels
+from data import get_dataset, get_ELEP_images_and_labels, get_zoo_elephants_images_and_labels
 
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -19,6 +19,27 @@ from tensorflow.keras.models import load_model
 
 
 ssl._create_default_https_context = ssl._create_unverified_context
+
+
+class AdditionalValidationSets(tf.keras.callbacks.Callback):
+    def __init__(self, validation_sets, verbose=0):
+        super(AdditionalValidationSets, self).__init__()
+        self.validation_sets = validation_sets
+        self.verbose = verbose
+
+    def on_epoch_end(self, epoch, logs=None):
+
+        # evaluate on the additional validation sets
+        for validation_set in self.validation_sets:
+            val_ds, validation_set_name = validation_set
+
+            results = self.model.evaluate(val_ds,
+                                          verbose=self.verbose,
+                                          return_dict=True)
+
+            for metric, result in results.items():
+                valuename = validation_set_name + '_' + metric
+                logs[valuename] = result
 
 
 class SiameseModel(Model):
@@ -101,10 +122,12 @@ if __name__ == '__main__':
                         help="Number epochs to train the model for")
     parser.add_argument('--save_freq', default=20, type=int,
                         help="save model every 'save_freq' epochs")
-    parser.add_argument('--params', default='hyperparameters/initial_run.json',
+    parser.add_argument('--params', default='hyperparameters/init.json',
                         help="JSON file with parameters")
     parser.add_argument('--data_dir', default='../data/',
                         help="Directory containing the dataset")
+    parser.add_argument('--additional_data_dir', default='../data/',
+                        help="Directory containing the additional dataset for validation")
     parser.add_argument('--log_dir', default='logs/',
                         help="Directory containing the Logs")
     parser.add_argument('--restore_latest', default=False,
@@ -122,18 +145,43 @@ if __name__ == '__main__':
 
     print(params)
 
-    RUN_DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '-' +  ''.join(np.random.choice([chr(i) for i in range(48,58)] + [chr(i) for i in range(97,123)], 5))
+    rand_string = ''.join(np.random.choice([chr(i) for i in range(48, 58)] + [chr(i) for i in range(97, 123)], 5))
+    RUN_DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '-' + rand_string
     print('\n', RUN_DATETIME_STR, '\n')
 
     cache_files = {
         'train': str(Path(args.data_dir) / 'train.cache'),
-        'val': str(Path(args.data_dir) / 'val.cache')
+        'val': str(Path(args.data_dir) / 'val.cache'),
+        'val_2': str(Path(args.additional_data_dir) / 'val.cache')
     }
-    # train_ds, val_ds, N = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, cache_files)
-    train_ds, N_train = get_dataset(get_ELEP_images_and_labels, params, args.data_dir,
-                                    mode='train', augment=True,  cache_files=cache_files, shuffle=True)
-    val_ds, N_val = get_dataset(get_ELEP_images_and_labels, params, args.data_dir, mode='val',
-                                augment=False, cache_files=cache_files, shuffle=False)
+
+    train_ds, N_train, _ = get_dataset(get_ELEP_images_and_labels,
+                                       params,
+                                       str(Path(args.data_dir)/'train'),
+                                       augment=True,
+                                       cache_file=cache_files['train'],
+                                       shuffle=True,
+                                       batch_size=params['batch_size']['train'])
+
+    val_ds, _, _ = get_dataset(get_ELEP_images_and_labels,
+                               params,
+                               str(Path(args.data_dir)/'val'),
+                               augment=False,
+                               cache_file=cache_files['val'],
+                               shuffle=False,
+                               batch_size=params['batch_size']['val'])
+
+    val_2_ds, _, _ = get_dataset(get_zoo_elephants_images_and_labels,
+                                 params,
+                                 str(Path(args.additional_data_dir)),
+                                 augment=False,
+                                 cache_file=cache_files['val_2'],
+                                 shuffle=False,
+                                 batch_size=params['batch_size']['val'])
+
+    # train_ds = train_ds.take(1)
+    # val_ds = val_ds.take(1)
+    # val_2_ds = val_2_ds.take(1)
 
     # Tensorboard callback
     # tensorboard serve --logdir logs/ --port 8080
@@ -171,15 +219,18 @@ if __name__ == '__main__':
         verbose=1,
         save_freq=int(args.save_freq * STEPS_PER_EPOCH))
 
+    additional_val_cb = AdditionalValidationSets([(val_2_ds, 'val_2')], verbose=0)
+
+    # Create and compile model
     siamese_model = SiameseModel(params, args.finetune)
 
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-      params['lr'],
-      decay_steps=params['decay_steps'],
-      decay_rate=params['decay_rate'],
-      staircase=True)
-    siamese_model.compile(optimizer=optimizers.SGD(learning_rate = lr_schedule))
-    # siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
+        params['lr'],
+        decay_steps=params['decay_steps'],
+        decay_rate=params['decay_rate'],
+        staircase=True)
+    # siamese_model.compile(optimizer=optimizers.SGD(learning_rate=lr_schedule))
+    siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
 
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')
@@ -202,22 +253,13 @@ if __name__ == '__main__':
     siamese_model.fit(train_ds,
                       epochs=args.epochs,
                       validation_data=val_ds,
-                      callbacks=[latest_cp_callback, best_cp_callback, tensorboard_callback])
-
+                      callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])
 
     base_model = siamese_model.siamese_network.layers[1]
-    base_model.trainable = True
-    trainable = False
-    for layer in base_model.layers:
-        if layer.name == "conv5_block2_out":
-            trainable = True
-        layer.trainable = trainable
+    enable_finetune(params, base_model)
 
     # siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
     siamese_model.fit(train_ds,
                       epochs=args.epochs2,
                       validation_data=val_ds,
-                      callbacks=[latest_cp_callback, best_cp_callback, tensorboard_callback])
-    
-
-    
+                      callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])

@@ -46,7 +46,9 @@ def get_zoo_elephants_images_and_labels(dir_path):
     return list(images_paths), list(image_labels)
 
 
-def get_dataset(f, params, dir_path, augment=None, cache_file=None, model_preprocess=True, shuffle=True, batch_size=32):
+def get_dataset(f, params, dir_path,
+                augment=None, cache_file=None, model_preprocess=True,
+                shuffle=True, batch_size=32):
 
     image_paths, image_labels = f(dir_path)
     N = len(image_labels)
@@ -59,16 +61,17 @@ def get_dataset(f, params, dir_path, augment=None, cache_file=None, model_prepro
     if cache_file:
         dataset = dataset.cache(cache_file)
 
-    dataset = dataset.map(
-        lambda x, y: (preprocess_image(x, params['image_size'],
-                                       augment=augment, model_preprocess=model_preprocess), y),
+    dataset = dataset.map(lambda x, y: (
+        preprocess_image(x, params['image_size'], augment=augment, model_preprocess=model_preprocess), y),
         num_parallel_calls=AUTOTUNE)
 
     if shuffle:
         dataset = dataset.shuffle(buffer_size=N)
-    dataset = dataset.batch(batch_size).prefetch(AUTOTUNE)
 
-    return dataset, N
+    if batch_size:
+        dataset = dataset.batch(batch_size).prefetch(AUTOTUNE)
+
+    return dataset, N, image_labels
 
 
 def get_eval_dataset(
