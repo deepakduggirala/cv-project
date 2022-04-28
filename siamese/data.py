@@ -46,12 +46,9 @@ def get_zoo_elephants_images_and_labels(dir_path):
     return list(images_paths), list(image_labels)
 
 
-def get_dataset(f, params, dir_path, mode='train', augment=None, cache_files=None, model_preprocess=True, shuffle=True):
+def get_dataset(f, params, dir_path, augment=None, cache_file=None, model_preprocess=True, shuffle=True, batch_size=32):
 
-    if augment is None:
-        augment = mode == 'train'
-
-    image_paths, image_labels = f(Path(dir_path)/mode)
+    image_paths, image_labels = f(dir_path)
     N = len(image_labels)
 
     AUTOTUNE = tf.data.AUTOTUNE
@@ -59,8 +56,8 @@ def get_dataset(f, params, dir_path, mode='train', augment=None, cache_files=Non
     dataset = dataset.map(lambda x, y: (parse_image_function(
         x, params['image_size'], resize_pad=params['resize_pad']), y), num_parallel_calls=AUTOTUNE)
 
-    if cache_files:
-        dataset = dataset.cache(cache_files[mode])
+    if cache_file:
+        dataset = dataset.cache(cache_file)
 
     dataset = dataset.map(
         lambda x, y: (preprocess_image(x, params['image_size'],
@@ -69,7 +66,7 @@ def get_dataset(f, params, dir_path, mode='train', augment=None, cache_files=Non
 
     if shuffle:
         dataset = dataset.shuffle(buffer_size=N)
-    dataset = dataset.batch(params['batch_size'][mode]).prefetch(AUTOTUNE)
+    dataset = dataset.batch(batch_size).prefetch(AUTOTUNE)
 
     return dataset, N
 

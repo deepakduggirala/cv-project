@@ -1,5 +1,6 @@
 import os
 import tensorflow as tf
+from tensorflow.keras.applications.inception_v3 import InceptionV3
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
@@ -93,16 +94,73 @@ def get_model_dw2(params, finetune=False):
     inputs = tf.keras.Input(shape=(params['image_size'], params['image_size'], 3))
     x = base_model(inputs, training=False)
     dropout1 = tf.keras.layers.Dropout(rate=params['dropout1_rate'])(x)
-    
+
     conv1x1 = tf.keras.layers.Conv2D(kernel_size=1, filters=256, activation='relu')(dropout1)
     dropout2 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(conv1x1)
-    
+
     dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(8, 8))(dropout2)
     flatten = tf.keras.layers.Flatten()(dw_conv)
     dropout3 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(flatten)
-    
+
     embedding_layer = tf.keras.layers.Dense(
         units=params['embedding_size'],
+        kernel_regularizer=tf.keras.regularizers.L2(params['dense_l2_reg_c']))(dropout3)
+    return tf.keras.Model(inputs, embedding_layer)
+
+
+def inception_model(params, finetune=False):
+    s = params['image_size']
+    d = params['embedding_size']
+    base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(s, s, 3))
+
+    if finetune:
+        # we chose to train the top 2 inception blocks, i.e. we will freeze
+        # the first 249 layers and unfreeze the rest:
+        for layer in base_model.layers[:249]:
+            layer.trainable = False
+        for layer in base_model.layers[249:]:
+            layer.trainable = True
+    else:
+        for layer in base_model.layers:
+            layer.trainable = False
+
+    inputs = tf.keras.Input(shape=(s, s, 3))
+    x = base_model(inputs, training=False)
+    flatten = tf.keras.layers.GlobalAveragePooling2D()(x)
+    embedding_layer = tf.keras.layers.Dense(units=d, kernel_regularizer=tf.keras.regularizers.L2(
+        params['dense_l2_reg_c']))(flatten)
+    return tf.keras.Model(inputs, embedding_layer)
+
+
+def inception_model_dw(params, finetune=False):
+    s = params['image_size']
+    d = params['embedding_size']
+    base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(s, s, 3))
+
+    if finetune:
+        # we chose to train the top 2 inception blocks, i.e. we will freeze
+        # the first 249 layers and unfreeze the rest:
+        for layer in base_model.layers[:249]:
+            layer.trainable = False
+        for layer in base_model.layers[249:]:
+            layer.trainable = True
+    else:
+        for layer in base_model.layers:
+            layer.trainable = False
+
+    inputs = tf.keras.Input(shape=(s, s, 3))
+    x = base_model(inputs, training=False)
+    dropout1 = tf.keras.layers.Dropout(rate=params['dropout1_rate'])(x)
+
+    conv1x1 = tf.keras.layers.Conv2D(kernel_size=1, filters=256, activation='relu')(dropout1)
+    dropout2 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(conv1x1)
+
+    dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(6, 6))(dropout2)
+    flatten = tf.keras.layers.Flatten()(dw_conv)
+    dropout3 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(flatten)
+
+    embedding_layer = tf.keras.layers.Dense(
+        units=d,
         kernel_regularizer=tf.keras.regularizers.L2(params['dense_l2_reg_c']))(dropout3)
     return tf.keras.Model(inputs, embedding_layer)
 
@@ -114,5 +172,9 @@ def get_model(params, finetune=False):
         return get_model_dw(params, finetune)
     elif params['name'] == 'depthwise2':
         return get_model_dw2(params, finetune)
+    elif params['name'] == 'inceptionv3':
+        return inception_model(params, finetune)
+    elif params['name'] == 'inceptionv3_dw':
+        return inception_model_dw(params, finetune)
     else:
         return None

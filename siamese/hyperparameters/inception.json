@@ -1,0 +1,19 @@
+{
+  "name": "inceptionv3",
+  "image_size": 256,
+  "resize_pad": false,
+  "batch_size": {
+    "train": 128,
+    "val": 512
+  },
+  "margin": 0.5,
+  "squared": false,
+  "embedding_size": 256,
+  "lr": 0.00005,
+  "decay_steps": 13,
+  "decay_rate": 0.96,
+  "dense_l2_reg_c": 0.01,
+  "metrics_d": 1.25,
+  "triplet_strategy": "batch_all",
+  "depthwise": false
+}
