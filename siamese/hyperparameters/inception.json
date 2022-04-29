@@ -10,10 +10,10 @@
   "margin": 0.5,
   "squared": false,
   "embedding_size": 256,
-  "lr": 0.001,
-  "decay_steps": 520,
-  "decay_rate": 0.1,
-  "dense_l2_reg_c": 0.0001,
+  "lr": 0.00005,
+  "decay_steps": 1300,
+  "decay_rate": 0.2,
+  "dense_l2_reg_c": 0.1,
   "metrics_d": 0.8,
   "triplet_strategy": "batch_all"
 }

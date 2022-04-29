@@ -126,7 +126,7 @@ if __name__ == '__main__':
                         help="JSON file with parameters")
     parser.add_argument('--data_dir', default='../data/',
                         help="Directory containing the dataset")
-    parser.add_argument('--additional_data_dir', default='../data/',
+    parser.add_argument('--additional_data_dir', default=False,
                         help="Directory containing the additional dataset for validation")
     parser.add_argument('--log_dir', default='logs/',
                         help="Directory containing the Logs")
@@ -151,8 +151,7 @@ if __name__ == '__main__':
 
     cache_files = {
         'train': str(Path(args.data_dir) / 'train.cache'),
-        'val': str(Path(args.data_dir) / 'val.cache'),
-        'val_2': str(Path(args.additional_data_dir) / 'val.cache')
+        'val': str(Path(args.data_dir) / 'val.cache')
     }
 
     train_ds, N_train, _ = get_dataset(get_ELEP_images_and_labels,
@@ -176,7 +175,7 @@ if __name__ == '__main__':
                                     params,
                                     str(Path(args.additional_data_dir)),
                                     augment=False,
-                                    cache_file=cache_files['val_2'],
+                                    cache_file=str(Path(args.additional_data_dir) / 'val.cache'),
                                     shuffle=False,
                                     batch_size=params['batch_size']['val'])
         additional_val_cb = AdditionalValidationSets([(val_2_ds, 'val_2')], verbose=0)
@@ -232,7 +231,7 @@ if __name__ == '__main__':
         decay_rate=params['decay_rate'],
         staircase=True)
     # siamese_model.compile(optimizer=optimizers.SGD(learning_rate=lr_schedule))
-    siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
+    siamese_model.compile(optimizer=optimizers.Adam(learning_rate=lr_schedule))
 
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')

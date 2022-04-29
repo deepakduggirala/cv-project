@@ -202,6 +202,8 @@ Namespace(data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped', epochs=200, finet
 
 Previously in data.py, images are cached after data augmentation is applied
 
+gave best val of 0.88
+
 
 
 ###  20220425-211419 - 20220425-214400
