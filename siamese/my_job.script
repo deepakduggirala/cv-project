@@ -13,6 +13,6 @@
 module load deeplearning/2.8.0
 
 #Run your program
-python train.py --epochs=500 --epochs2=1400 --data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped' --params=hyperparameters/depthwise2.json
+python train.py --epochs=60 --epochs2=40 --data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped' --additional_data_dir='/N/u/deduggi/Carbonate/Elephants-dataset-cropped-png-1024' --params=hyperparameters/inception.json
 
 #--finetune --restore_latest=latest_weights/20220425-234730-58ffs

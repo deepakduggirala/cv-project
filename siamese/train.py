@@ -171,13 +171,15 @@ if __name__ == '__main__':
                                shuffle=False,
                                batch_size=params['batch_size']['val'])
 
-    val_2_ds, _, _ = get_dataset(get_zoo_elephants_images_and_labels,
-                                 params,
-                                 str(Path(args.additional_data_dir)),
-                                 augment=False,
-                                 cache_file=cache_files['val_2'],
-                                 shuffle=False,
-                                 batch_size=params['batch_size']['val'])
+    if args.additional_data_dir:
+        val_2_ds, _, _ = get_dataset(get_zoo_elephants_images_and_labels,
+                                    params,
+                                    str(Path(args.additional_data_dir)),
+                                    augment=False,
+                                    cache_file=cache_files['val_2'],
+                                    shuffle=False,
+                                    batch_size=params['batch_size']['val'])
+        additional_val_cb = AdditionalValidationSets([(val_2_ds, 'val_2')], verbose=0)
 
     # train_ds = train_ds.take(1)
     # val_ds = val_ds.take(1)
@@ -219,7 +221,7 @@ if __name__ == '__main__':
         verbose=1,
         save_freq=int(args.save_freq * STEPS_PER_EPOCH))
 
-    additional_val_cb = AdditionalValidationSets([(val_2_ds, 'val_2')], verbose=0)
+    
 
     # Create and compile model
     siamese_model = SiameseModel(params, args.finetune)
@@ -250,10 +252,15 @@ if __name__ == '__main__':
     input_shape = (None, params['image_size'], params['image_size'], 3)
     siamese_model.compute_output_shape(input_shape=input_shape)
 
+    if args.additional_data_dir:
+      callbacks = [additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback]
+    else:
+      callbacks = [latest_cp_callback, best_cp_callback, tensorboard_callback]
+
     siamese_model.fit(train_ds,
                       epochs=args.epochs,
                       validation_data=val_ds,
-                      callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])
+                      callbacks=callbacks)
 
     if args.epochs2:
         base_model = siamese_model.siamese_network.layers[1]
@@ -263,4 +270,4 @@ if __name__ == '__main__':
         siamese_model.fit(train_ds,
                           epochs=args.epochs2,
                           validation_data=val_ds,
-                          callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])
+                          callbacks=callbacks)
