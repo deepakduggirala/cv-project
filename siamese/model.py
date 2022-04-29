@@ -83,7 +83,7 @@ def get_model_dw2(params, finetune=False):
     conv1x1 = tf.keras.layers.Conv2D(kernel_size=1, filters=256, activation='relu')(dropout1)
     dropout2 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(conv1x1)
 
-    dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(8, 8))(dropout2)
+    dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(8, 8), activation='relu')(dropout2)
     flatten = tf.keras.layers.Flatten()(dw_conv)
     dropout3 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(flatten)
 
@@ -130,7 +130,7 @@ def inception_model_dw(params, finetune=False):
     conv1x1 = tf.keras.layers.Conv2D(kernel_size=1, filters=256, activation='relu')(dropout1)
     dropout2 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(conv1x1)
 
-    dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(6, 6))(dropout2)
+    dw_conv = tf.keras.layers.DepthwiseConv2D(kernel_size=(6, 6), activation='relu')(dropout2)
     flatten = tf.keras.layers.Flatten()(dw_conv)
     dropout3 = tf.keras.layers.Dropout(rate=params['dropout2_rate'])(flatten)
 

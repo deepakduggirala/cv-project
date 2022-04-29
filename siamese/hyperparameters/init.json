@@ -3,8 +3,9 @@
   "image_size": 256,
   "resize_pad": false,
   "batch_size": {
-    "train": 64,
-    "val": 64
+    "train": 128,
+    "val": 512,
+    "val_2": 1800
   },
   "margin": 0.5,
   "squared": false,
@@ -14,6 +15,5 @@
   "decay_rate": 0.96,
   "dense_l2_reg_c": 0.01,
   "metrics_d": 1.25,
-  "triplet_strategy": "batch_all",
-  "depthwise": false
+  "triplet_strategy": "batch_all"
 }

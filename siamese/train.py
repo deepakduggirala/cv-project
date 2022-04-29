@@ -118,7 +118,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=20, type=int,
                         help="Number epochs to train the model for")
-    parser.add_argument('--epochs2', default=20, type=int,
+    parser.add_argument('--epochs2', default=0, type=int,
                         help="Number epochs to train the model for")
     parser.add_argument('--save_freq', default=20, type=int,
                         help="save model every 'save_freq' epochs")
@@ -255,11 +255,12 @@ if __name__ == '__main__':
                       validation_data=val_ds,
                       callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])
 
-    base_model = siamese_model.siamese_network.layers[1]
-    enable_finetune(params, base_model)
+    if args.epochs2:
+        base_model = siamese_model.siamese_network.layers[1]
+        enable_finetune(params, base_model)
 
-    # siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
-    siamese_model.fit(train_ds,
-                      epochs=args.epochs2,
-                      validation_data=val_ds,
-                      callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])
+        # siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
+        siamese_model.fit(train_ds,
+                          epochs=args.epochs2,
+                          validation_data=val_ds,
+                          callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])
