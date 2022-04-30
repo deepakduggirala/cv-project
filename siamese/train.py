@@ -126,7 +126,7 @@ if __name__ == '__main__':
                         help="JSON file with parameters")
     parser.add_argument('--data_dir', default='../data/',
                         help="Directory containing the dataset")
-    parser.add_argument('--additional_data_dir', default='../data/',
+    parser.add_argument('--additional_data_dir', default=False,
                         help="Directory containing the additional dataset for validation")
     parser.add_argument('--log_dir', default='logs/',
                         help="Directory containing the Logs")
@@ -151,8 +151,7 @@ if __name__ == '__main__':
 
     cache_files = {
         'train': str(Path(args.data_dir) / 'train.cache'),
-        'val': str(Path(args.data_dir) / 'val.cache'),
-        'val_2': str(Path(args.additional_data_dir) / 'val.cache')
+        'val': str(Path(args.data_dir) / 'val.cache')
     }
 
     train_ds, N_train, _ = get_dataset(get_ELEP_images_and_labels,
@@ -171,13 +170,15 @@ if __name__ == '__main__':
                                shuffle=False,
                                batch_size=params['batch_size']['val'])
 
-    val_2_ds, _, _ = get_dataset(get_zoo_elephants_images_and_labels,
-                                 params,
-                                 str(Path(args.additional_data_dir)),
-                                 augment=False,
-                                 cache_file=cache_files['val_2'],
-                                 shuffle=False,
-                                 batch_size=params['batch_size']['val'])
+    if args.additional_data_dir:
+        val_2_ds, _, _ = get_dataset(get_zoo_elephants_images_and_labels,
+                                    params,
+                                    str(Path(args.additional_data_dir)),
+                                    augment=False,
+                                    cache_file=str(Path(args.additional_data_dir) / 'val.cache'),
+                                    shuffle=False,
+                                    batch_size=params['batch_size']['val'])
+        additional_val_cb = AdditionalValidationSets([(val_2_ds, 'val_2')], verbose=0)
 
     # train_ds = train_ds.take(1)
     # val_ds = val_ds.take(1)
@@ -219,7 +220,7 @@ if __name__ == '__main__':
         verbose=1,
         save_freq=int(args.save_freq * STEPS_PER_EPOCH))
 
-    additional_val_cb = AdditionalValidationSets([(val_2_ds, 'val_2')], verbose=0)
+    
 
     # Create and compile model
     siamese_model = SiameseModel(params, args.finetune)
@@ -230,7 +231,7 @@ if __name__ == '__main__':
         decay_rate=params['decay_rate'],
         staircase=True)
     # siamese_model.compile(optimizer=optimizers.SGD(learning_rate=lr_schedule))
-    siamese_model.compile(optimizer=optimizers.Adam(learning_rate=params['lr']))
+    siamese_model.compile(optimizer=optimizers.Adam(learning_rate=lr_schedule))
 
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')
@@ -250,10 +251,15 @@ if __name__ == '__main__':
     input_shape = (None, params['image_size'], params['image_size'], 3)
     siamese_model.compute_output_shape(input_shape=input_shape)
 
+    if args.additional_data_dir:
+      callbacks = [additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback]
+    else:
+      callbacks = [latest_cp_callback, best_cp_callback, tensorboard_callback]
+
     siamese_model.fit(train_ds,
                       epochs=args.epochs,
                       validation_data=val_ds,
-                      callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])
+                      callbacks=callbacks)
 
     if args.epochs2:
         base_model = siamese_model.siamese_network.layers[1]
@@ -263,4 +269,4 @@ if __name__ == '__main__':
         siamese_model.fit(train_ds,
                           epochs=args.epochs2,
                           validation_data=val_ds,
-                          callbacks=[additional_val_cb, latest_cp_callback, best_cp_callback, tensorboard_callback])
+                          callbacks=callbacks)
