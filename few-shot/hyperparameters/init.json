@@ -1,0 +1,13 @@
+{
+  "image_size": 256,
+  "resize_pad": false,
+  "batch_size": {
+    "train": 32,
+    "val": 32
+  },
+  "lr": 0.00005,
+  "decay_steps": 13,
+  "decay_rate": 0.96,
+  "dense_l2_reg_c": 0.01,
+  "embedding_size": 17
+}
