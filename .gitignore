@@ -7,3 +7,4 @@ filename_*
 logs
 latest_weights
 runs
+*.npy

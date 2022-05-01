@@ -105,3 +105,23 @@ def get_dataset(image_paths, image_labels, params,
         dataset = dataset.batch(batch_size).prefetch(AUTOTUNE)
 
     return dataset, N, image_labels
+
+
+def get_embeddings(image_paths, image_labels, params, base_model, n_repeat=1, cache_file=None):
+    ds_aug, _, _ = get_dataset(image_paths, image_labels,
+                               params,
+                               augment=True,
+                               cache_file=cache_file,
+                               shuffle=False,
+                               batch_size=32)
+    ds_aug = ds_aug.repeat(n_repeat)
+    embeddings_aug = base_model.predict(ds_aug, verbose=True)
+
+    ls = np.array(image_labels)
+
+    return embeddings_aug, np.hstack([ls]*n_repeat)
+
+
+def load_embeddings(embs_path, labels_path):
+    embs = np.load('embeddings.npy')
+    ls = np.load('image_labels.npy')

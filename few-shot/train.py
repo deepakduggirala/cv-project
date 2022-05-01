@@ -21,7 +21,9 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def get_support_class_means(preds, categories, support_labels):
-    class_means = np.zeros((17, 2048))
+    d_out = categories.shape[0]
+    d_in = preds.shape[1]
+    class_means = np.zeros((d_out, d_in))
     for i, c in enumerate(categories):
         mask = np.array(support_labels) == c
         class_means[i, :] = np.mean(preds[mask, :], axis=0)
@@ -60,27 +62,28 @@ def make_callbacks(args, params, N_train):
     log_dir = str(Path(args.log_dir) / RUN_DATETIME_STR)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False)
 
-    filepath = Path('best_weights') / RUN_DATETIME_STR / 'weights.ckpt'
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    best_cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        monitor='val_loss',
-        filepath=str(filepath),
-        save_weights_only=True,
-        verbose=1,
-        mode='min',
-        save_best_only=True)
+    # filepath = Path('best_weights') / RUN_DATETIME_STR / 'weights.ckpt'
+    # filepath.parent.mkdir(parents=True, exist_ok=True)
+    # best_cp_callback = tf.keras.callbacks.ModelCheckpoint(
+    #     monitor='val_loss',
+    #     filepath=str(filepath),
+    #     save_weights_only=True,
+    #     verbose=1,
+    #     mode='min',
+    #     save_best_only=True)
 
-    STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size']['train'])
-    filepath = Path('latest_weights') / RUN_DATETIME_STR / 'weights.ckpt'
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    latest_cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        monitor='val_loss',
-        filepath=str(filepath),
-        save_weights_only=True,
-        verbose=1,
-        save_freq=int(args.save_freq * STEPS_PER_EPOCH))
+    # STEPS_PER_EPOCH = math.ceil(N_train / params['batch_size']['train'])
+    # filepath = Path('latest_weights') / RUN_DATETIME_STR / 'weights.ckpt'
+    # filepath.parent.mkdir(parents=True, exist_ok=True)
+    # latest_cp_callback = tf.keras.callbacks.ModelCheckpoint(
+    #     monitor='val_loss',
+    #     filepath=str(filepath),
+    #     save_weights_only=True,
+    #     verbose=1,
+    #     save_freq=int(args.save_freq * STEPS_PER_EPOCH))
 
-    return [latest_cp_callback, best_cp_callback, tensorboard_callback]
+    # return [latest_cp_callback, best_cp_callback, tensorboard_callback]
+    return [tensorboard_callback]
 
 
 if __name__ == '__main__':
@@ -159,10 +162,12 @@ if __name__ == '__main__':
     #     staircase=True)
     # siamese_model.compile(optimizer=optimizers.SGD(learning_rate=lr_schedule))
 
+    top_3_acc = tf.keras.metrics.TopKCategoricalAccuracy(k=3, name="top_3_accuracy")
+    top_5_acc = tf.keras.metrics.TopKCategoricalAccuracy(k=5, name="top_5_accuracy")
     few_shot_model.compile(
         optimizer=optimizers.Adam(learning_rate=params['lr']),
         loss=my_loss_fn,
-        metrics=['accuracy'])
+        metrics=['accuracy', top_3_acc, top_5_acc])
 
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')
