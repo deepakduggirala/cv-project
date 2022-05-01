@@ -1,7 +1,42 @@
+import numpy as np
+from collections import Counter
+from pathlib import Path
+
 import tensorflow as tf
 from tensorflow.keras.applications.resnet_v2 import preprocess_input
-from pathlib import Path
-import numpy as np
+
+
+def shuffle(n):
+    x = np.arange(n, dtype=np.int32)
+    np.random.shuffle(x)
+    return x
+
+
+def get_support_and_query_sets(image_paths, image_labels, n_support, seed=99):
+    support_images = []
+    support_labels = []
+
+    query_images = []
+    query_labels = []
+
+    np.random.seed(seed)
+    counts = Counter(image_labels)
+    shuffled_idxs = {c: shuffle(count) for c, count in counts.items()}
+
+    for c, idxs in shuffled_idxs.items():
+        s_idxs = idxs[:n_support]
+        q_idxs = idxs[n_support:]
+
+        mask = np.array(image_labels) == c
+        c_image_labels = np.array(image_labels)[mask]
+        c_image_paths = np.array(image_paths)[mask]
+
+        support_images.extend(c_image_paths[s_idxs])
+        support_labels.extend(c_image_labels[s_idxs])
+        query_images.extend(c_image_paths[q_idxs])
+        query_labels.extend(c_image_labels[q_idxs])
+
+    return support_images, support_labels, query_images, query_labels
 
 
 def preprocess_image(image, image_size, augment=True, model_preprocess=True):
@@ -46,11 +81,9 @@ def get_zoo_elephants_images_and_labels(dir_path):
     return list(images_paths), list(image_labels)
 
 
-def get_dataset(f, params, dir_path,
+def get_dataset(image_paths, image_labels, params,
                 augment=None, cache_file=None, model_preprocess=True,
                 shuffle=True, batch_size=32):
-
-    image_paths, image_labels = f(dir_path)
     N = len(image_labels)
 
     AUTOTUNE = tf.data.AUTOTUNE
@@ -71,24 +104,24 @@ def get_dataset(f, params, dir_path,
     if batch_size:
         dataset = dataset.batch(batch_size).prefetch(AUTOTUNE)
 
-    return dataset, N, np.array(image_labels)
+    return dataset, N, image_labels
 
 
-def get_eval_dataset(
-        f, params, dir_path, cache_file=None, batch_size=32):
-    image_paths, image_labels = f(dir_path)
-    N = len(image_labels)
+def get_embeddings(image_paths, image_labels, params, base_model, n_repeat=1, cache_file=None):
+    ds_aug, _, _ = get_dataset(image_paths, image_labels,
+                               params,
+                               augment=True,
+                               cache_file=cache_file,
+                               shuffle=False,
+                               batch_size=32)
+    ds_aug = ds_aug.repeat(n_repeat)
+    embeddings_aug = base_model.predict(ds_aug, verbose=True)
 
-    AUTOTUNE = tf.data.AUTOTUNE
-    dataset = tf.data.Dataset.from_tensor_slices(image_paths)
-    dataset = dataset.map(lambda x: parse_image_function(
-        x, params['image_size'], resize_pad=params['resize_pad']), num_parallel_calls=tf.data.AUTOTUNE)
+    ls = np.array(image_labels)
 
-    if cache_file:
-        dataset = dataset.cache(cache_file)
+    return embeddings_aug, np.hstack([ls]*n_repeat)
 
-    dataset = dataset.map(lambda x: (preprocess_image(
-        x, params['image_size'], augment=False)), num_parallel_calls=AUTOTUNE)
-    dataset = dataset.batch(batch_size).prefetch(AUTOTUNE)
 
-    return dataset, np.array(image_labels)
+def load_embeddings(embs_path, labels_path):
+    embs = np.load('embeddings.npy')
+    ls = np.load('image_labels.npy')
