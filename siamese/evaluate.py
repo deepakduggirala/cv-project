@@ -3,7 +3,7 @@ import json
 import numpy as np
 from pathlib import Path
 
-from data import get_zoo_elephants_images_and_labels, get_ELEP_images_and_labels, get_eval_dataset
+from data import get_zoo_elephants_images_and_labels, get_ELEP_images_and_labels, get_dataset
 from train import SiameseModel
 from metrics import get_kernel_mask, val, far, pairwise_accuracy
 
@@ -41,8 +41,16 @@ if __name__ == '__main__':
     # siamese_model.compute_output_shape(input_shape=input_shape)
 
     # cache_file = str(Path(args.data_dir) / 'eval.cache')
-    images, labels = get_eval_dataset(get_zoo_elephants_images_and_labels, params,
-                                      Path(args.data_dir), cache_file=None, batch_size=32)
+    # images, labels = get_eval_dataset(get_ELEP_images_and_labels, params,
+    #                                   Path(args.data_dir), cache_file=None, batch_size=32)
+
+    images, N, labels = get_dataset(get_ELEP_images_and_labels,
+                               params,
+                               str(Path(args.data_dir)/'val'),
+                               augment=False,
+                               cache_file=str(Path(args.data_dir) / 'val.cache'),
+                               shuffle=False,
+                               batch_size=32)
 
     embeddings = siamese_model.predict(images)
     embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=1)
@@ -54,7 +62,7 @@ if __name__ == '__main__':
     print('False accept rate (FAR): ', far(kernel, mask, d))
     print('pairwise_accuracy: ', pairwise_accuracy(kernel, mask, d))
 
-    for d in np.arange(0.1, 1.4, 0.1):
+    for d in np.arange(0.01,0.105,0.005):
         print('d', d)
         print('Validation rate (VAL): ', val(kernel, mask, d))
         print('False accept rate (FAR): ', far(kernel, mask, d))

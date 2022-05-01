@@ -71,7 +71,7 @@ def get_dataset(f, params, dir_path,
     if batch_size:
         dataset = dataset.batch(batch_size).prefetch(AUTOTUNE)
 
-    return dataset, N, image_labels
+    return dataset, N, np.array(image_labels)
 
 
 def get_eval_dataset(

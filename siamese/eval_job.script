@@ -13,5 +13,5 @@
 module load deeplearning/2.8.0
 
 #Run your program
-python evaluate.py --data_dir='/N/u/deduggi/Carbonate/Elephants-dataset-cropped-png-1024' --weights=best_weights/20220425-214400/weights.ckpt --params=hyperparameters/depthwise2.json
+python evaluate.py --data_dir='/N/u/deduggi/Carbonate/ELPephant-cropped' --weights=best_weights/20220429-000920-ypc4c/weights.ckpt --params=hyperparameters/inception.json
 # python evaluate.py -d=1.25 --data_dir='/N/u/deduggi/Carbonate/Elephants-dataset-cropped-png-1024' --weights=best_weights/20220423-202421/weights.ckpt
