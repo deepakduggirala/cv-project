@@ -217,56 +217,25 @@ batch partial hard
 
 
 \section{Experiments and Results}
-\label{sec:expresults}
-Number of experiments were performed on all three model. The Table1 shows parameters tried for each of the models. 
-
-\begin{table}[h!]
-  \begin{center}
-    \begin{tabular}{ c | c | c} 
-      \textbf{Classification} & \textbf{Few Shot} & \textbf{Siamese}\\
-      \hline
-      \makecell{RestNet50,  \\ InceptionV3} & \makecell{ RestNet50, \\ InceptionV3} & \makecell{RestNet50, \\ InceptionV3 }\\
-       \hline
-      \makecell{Image \\ Augmentation}  & \makecell{Image \\Augmentation} & \makecell{Image \\ Augmentation}\\
-      \hline
-      Finetuning  & Finetuning & Embedding size\\
-      \hline
-        & Support set size & Triplet loss margin\\
-     \hline
-     	& & Triplet loss strategy\\
-     \hline
-	& & \makecell{Optimizer: \\ Adam, SGD}\\
-     \hline
-      	& & Aspect Ratio\\
-    \end{tabular}
-  \caption{Model Experiments}
-  \label{tab:table1}
-  \end{center}
-\end{table}
+\label{sec:expresults} 
 
 \subsection{Elephant Classification}
 
-For elephant classification model, we used two backbone models of ResNet50 and InceptionV3. We found that both the model performed well on zoo elephants dataset with top-1 accuracies of 0.9971 and 0.979 respectively. This model did not perform well on wild dataset with top-1 accuracies of 0.21 and 0.16 respectively. The top-1, 3, and 5 accuracies for both zoo and wild dataset are shown in Table 2
+For elephant classification model, we used two backbone models of ResNet50 and InceptionV3. We found that both the model performed well on zoo elephants dataset with top-1 accuracies of 0.9971 and 0.979 respectively. This model did not perform well on wild dataset with top-1 accuracies of 0.21 and 0.16 respectively. The top-1, 3, and 5 accuracies for both zoo and wild dataset are shown in Table \ref{tab:clf-results}
 
-\begin{table}[h!]
-  \begin{center}
-    \begin{tabular}{ c | c | c | c} 
-    \textbf{Classification} & \textbf{Few Shot} & \textbf{Siamese}\\
-
-
-    \hline
-    \multicolumn{3}{c}{Multi-column}& \\
-    \cline{1-3}
-    X&X&X\\
-    X&X&X\\
-    \hline
-
+% Please add the following required packages to your document preamble:
+% \usepackage{booktabs}
+\begin{table}[]
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+                                 & \multicolumn{3}{l}{Zoo Elephants}          & \multicolumn{3}{l}{Wild Elephants} \\ \midrule
+\multicolumn{1}{l|}{}            & top-1 & top-3 & \multicolumn{1}{l|}{top-5} & top-1      & top-3     & top-5     \\
+\multicolumn{1}{l|}{ResNet50}    & 0.997 & 0.997 & \multicolumn{1}{l|}{0.997} & 0.210      & 0.325     & 0.383     \\
+\multicolumn{1}{l|}{InceptionV3} & 0.979 & 0.991 & \multicolumn{1}{l|}{0.994} & 0.159      & 0.243     & 0.272     \\ \bottomrule
 \end{tabular}
-  \caption{Elephant Classifier Zoo and Wild Dataset Accuracies}
-  \label{tab:table 2}
-  \end{center}
+\caption{Accuracy results on Zoo and Wild elephants datasets using Classification for re-identification}
+\label{tab:clf-results}
 \end{table}
-
 
 
 
@@ -287,6 +256,21 @@ For elephant classification model, we used two backbone models of ResNet50 and I
    \label{fig:augmentation}
 \end{figure}
 
+
+\begin{table}[]
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+                       & \multicolumn{3}{l}{ResNet50}               & \multicolumn{3}{l}{InceptionV3} \\ \midrule
+\multicolumn{1}{l|}{n} & top-1 & top-3 & \multicolumn{1}{l|}{top-5} & top-1     & top-3    & top-5    \\
+\multicolumn{1}{l|}{1} & 0.439 & 0.572 & \multicolumn{1}{l|}{0.703} & 0.449     & 0.585    & 0.659    \\
+\multicolumn{1}{l|}{3} & 0.776 & 0.9   & \multicolumn{1}{l|}{0.943} & 0.810     & 0.923    & 0.959    \\
+\multicolumn{1}{l|}{5} & 0.852 & 0.928 & \multicolumn{1}{l|}{0.955} & 0.918     & 0.966    & 0.976    \\
+\multicolumn{1}{l|}{7} & 0.931 & 0.978 & \multicolumn{1}{l|}{0.989} & 0.991     & 0.995    & 0.995    \\
+\multicolumn{1}{l|}{9} & 0.953 & 0.985 & \multicolumn{1}{l|}{0.992} & 0.998     & 0.998    & 0.993   
+\end{tabular}
+\caption{Accuracy results on Zoo elephants datasets using Few Shot for re-identification}
+\label{tab:few-shot-results}
+\end{table}
 
 
 \subsection{Siamese Network}
