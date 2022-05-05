@@ -218,7 +218,8 @@ batch partial hard
 
 \section{Experiments and Results}
 \label{sec:expresults}
-Number of experiments were performed on all three model. The Table1 shows parameters tried for each of the models. 
+
+Table \ref{tab:exp} shows experiments performed on all three models:
 
 \begin{table}[h!]
   \begin{center}
@@ -240,38 +241,26 @@ Number of experiments were performed on all three model. The Table1 shows parame
       	& & Aspect Ratio\\
     \end{tabular}
   \caption{Model Experiments}
-  \label{tab:table1}
+  \label{tab:exp}
   \end{center}
 \end{table}
 
 \subsection{Elephant Classification}
 
-For elephant classification model, we used two backbone models of ResNet50 and InceptionV3. We found that both the model performed well on zoo elephants dataset with top-1 accuracies of 0.9971 and 0.979 respectively. This model did not perform well on wild dataset with top-1 accuracies of 0.21 and 0.16 respectively. The top-1, 3, and 5 accuracies for both zoo and wild dataset are shown in Table 2
-
-\begin{table}[h!]
-  \begin{center}
-    \begin{tabular}{ c | c | c | c} 
-    \textbf{Classification} & \textbf{Few Shot} & \textbf{Siamese}\\
-
-
-    \hline
-    \multicolumn{3}{c}{Multi-column}& \\
-    \cline{1-3}
-    X&X&X\\
-    X&X&X\\
-    \hline
-
-\end{tabular}
-  \caption{Elephant Classifier Zoo and Wild Dataset Accuracies}
-  \label{tab:table 2}
-  \end{center}
-\end{table}
-
-
-
+For elephant classification model, we used two backbone models of ResNet50 and InceptionV3. We trained the model using these two backbone models along with image augmentation and fine-tuning.We found that both the model performed well on zoo elephants dataset with top-1 accuracies of 0.9971 and 0.979 respectively. This model did not perform well on wild dataset with top-1 accuracies of 0.21 and 0.16 respectively. The top-1, 3, and 5 accuracies for both zoo and wild dataset are shown in Table 
 
 
 \subsection{Few Shot Learning}
+
+In Few shot learning, we have used two backbone architectures of ResNet50 and InceptionV3.Both these model performed well on zoo elephants and didn't perform well on wild elephants. 
+Next, we trained the models with and without image augmentation.Image augmentations consisted of left-right flip, small random changes to saturation and hue as shown in figure \ref{fig:augmentation}. We observed that performing image augmentation improved the accuracy by 17\%. We experimented with preserving the aspect ratio of images by padding them as shown in figure \ref{fig:image_padding} but it caused degradation of performance. We fine-tuned the model with entropy regularization and observed that the accuracy improved by 35\%. Graph \ref{fig:finetune_graph} shows the performance of model for various support set with and without fine-tuning implementation. For few shot learning, we have used support set size of 1, 2, 3, 5, 7, and 9. Graph \ref{fig:few_shot_graph} shows the Top-1 accuracy for model for various support sizes. It was observed that the support size of just 3 performed well with top-1 accuracy of about 81\% on zoo dataset. Furthermore, the top-1 accuracy of 99\% was achieved with the support set of 7. 
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.37]{augmentation}
+   \caption{Image augmentations performed are right-left flip, saturation and hue changes}
+   \label{fig:augmentation}
+\end{figure}
 
 \begin{figure}[t]
   \centering
@@ -282,29 +271,30 @@ For elephant classification model, we used two backbone models of ResNet50 and I
 
 \begin{figure}[t]
   \centering
-  \includegraphics[scale=0.37]{augmentation}
-   \caption{Image augmentations performed are right-left flip, saturation and hue changes}
-   \label{fig:augmentation}
+  \includegraphics[scale=0.50]{finetune_graph}
+   \caption{Fine-tuning with entropy regularization}
+   \label{fig:finetune_graph}
 \end{figure}
 
-
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.45]{few_shot_graph}
+   \caption{Graph of Top-1 Accuracy with support set size}
+   \label{fig:few_shot_graph}
+\end{figure}
 
 \subsection{Siamese Network}
 
-
-
-
-
+In Siamese Network, we have  experimented with two backbone architectures of ResNet50 and InceptionV3 along with image augmentation. While training siamese network, we experimented with various triplet loss margins of 0.2, 0.5, 0.75 and selected margin of 0.5. We used triplet loss strategies of batch triplet loss and hard triplet loss. We observed the model performance using two optimizer: Adam and SGD and chose Adam optimizer. The model's performance was then tested with different embedding sizes: 64, 128 and 256, with the 256 embedding size providing the best results. Table \ref{} shows the VAL rate for embedding sizes of 64, 128 and 256.
 
 %-------------------------------------------------------------------------
-
-
 
 \section{Discussion}
 \label{sec:discussion}
 
-Please follow the steps outlined below when submitting your manuscript to the IEEE Computer Society Press.
-This style guide now has several important modifications (for example, you are no longer warned against the use of sticky tape to attach your artwork to the paper), so all authors should read this new version.
+
+
+
 
 %-------------------------------------------------------------------------
 
@@ -312,8 +302,10 @@ This style guide now has several important modifications (for example, you are n
 \section{Conclusion}
 \label{sec:conclusion}
 
-Please follow the steps outlined below when submitting your manuscript to the IEEE Computer Society Press.
-This style guide now has several important modifications (for example, you are no longer warned against the use of sticky tape to attach your artwork to the paper), so all authors should read this new version.
+
+
+
+
 
 %-------------------------------------------------------------------------
 
