@@ -76,9 +76,9 @@ Our project's purpose is to create a vision model that can be used to re-identif
 \section{Introduction}
 \label{sec:intro}
 
-Re-identification of animals is necessary for biodiversity monitoring and ecological research projects. Biologists and anthropologists need animal tracking to monitor their health, behavior, group dynamics and variation of population over time [Deb, Debayan, et al.]. Biodiversity development and health information is highly valuable for assessing the environmental effect and necessary steps required to preserve the ecosystems.
+Re-identification of animals is necessary for biodiversity monitoring and ecological research projects. Biologists and anthropologists need animal tracking to monitor their health, behavior, group dynamics and variation of population over time \cite{Deb}. Biodiversity development and health information is highly valuable for assessing the environmental effect and necessary steps required to preserve the ecosystems.
 
-Animal tracking can be performed by using a device that is attached to the animal. This technique requires human intervention and it is intrusive. It requires capturing animals which can be dangerous and also disruptive for an animal's wild habitat [Deb, Debayan, et al.]. Another method of tracking animals is by capturing the images and re-identifying animals from those images. The re-identification performed manually can be a time consuming process as multiple and vast numbers of images need to be analyzed. This re-identification requires domain knowledge about the particular species and also its prone to biases related to human judgment [Schneider, Stefan, et al.].
+Animal tracking can be performed by using a device that is attached to the animal. This technique requires human intervention and it is intrusive. It requires capturing animals which can be dangerous and also disruptive for an animal's wild habitat \cite{Deb}. Another method of tracking animals is by capturing the images and re-identifying animals from those images. The re-identification performed manually can be a time consuming process as multiple and vast numbers of images need to be analyzed. This re-identification requires domain knowledge about the particular species and also its prone to biases related to human judgment [Schneider, Stefan, et al.]. \cite{SchneiReidentify}
 
 Automated re-identification of animals provides a better solution to animal tracking without involving disruptive techniques and human errors. There has been ongoing research to extend human face recognition and identification techniques to animal identification using deep learning. There are many challenges while building a state of the art animal re-identification and classification model. These challenges arise due to similar looking animals and very small distinctive features like body size, scars and marks, coloring, etc [Körschens, et al.]. Apart from this, these features could also change over time. For example in the case of elephants, it could lose a tusk and a hole in the ear may become a rip [Körschens, et al.]. Other challenges are variations in image captured such as occlusion, varying viewpoints, different poses and angles of the animal in an image that affect the detection of distinctive features. For example in the case of elephants the feature might not be clearly visible in images because of mud on their bodies or the angle and movement [Körschens, et al.].
 
@@ -99,11 +99,11 @@ In this project, we have build a model for elephant re-identification system usi
 
 In the context of animal re-identification, various works have used custom feature engineering and classical computer vision techniques. Recently there has been some work on using the advanced and already mature human face recognition techniques e.g. FaceNet, DeepFace for animal recognition and identification tasks.
 
-[Korschens et al] used a pre-trained YOLO network for bounding box predictions to automatically locate an elephant's heads in images using pre pre-trained YOLO network.Used a human in the loop approach to select the best bounding box and then the bounding box is cropped and fed into a pre-trained ResNet 50 for feature extraction from the middle layer followed by pooling. PCA is used to reduce the number of features and then SVM is used for classification. To improve the accuracy, results of multiple images of the same elephant are aggregated by averaging the class wise confidence. The Top 1 accuracy for classification is 56\% and 74\% with two image aggregation. For the same task but using traditional methods [Ardovini et al][Schneider review] - performed re-identification of elephants using multi-curve matching technique and achieved top-1 accuracy for 75\%.
+Korschens et al \cite{Korschens} used a pre-trained YOLO network for bounding box predictions to automatically locate an elephant's heads in images using pre pre-trained YOLO network.Used a human in the loop approach to select the best bounding box and then the bounding box is cropped and fed into a pre-trained ResNet 50 for feature extraction from the middle layer followed by pooling. PCA is used to reduce the number of features and then SVM is used for classification. To improve the accuracy, results of multiple images of the same elephant are aggregated by averaging the class wise confidence. The Top 1 accuracy for classification is 56\% and 74\% with two image aggregation. For the same task but using traditional methods [Ardovini et al][Schneider review] - performed re-identification of elephants using multi-curve matching technique and achieved top-1 accuracy for 75\%.
 
-For primate re-identification [Debayan Deb et al] implemented a variation of a sphereface deep recognition to build embeddings of faces which then can be compared using similarity functions. Instead of using an object detection network to identify the faces, they manually annotated landmarks to align the faces. They achieved a closed set accuracy of 75.82\% on the chimpanzee dataset.
+For primate re-identification Debayan Deb et al \cite{Deb} implemented a variation of a sphereface deep recognition to build embeddings of faces which then can be compared using similarity functions. Instead of using an object detection network to identify the faces, they manually annotated landmarks to align the faces. They achieved a closed set accuracy of 75.82\% on the chimpanzee dataset.
 
-For identification of giant pandas, [Jin Hou et al] used significant data augmentation and trained a VGGnet for classification tasks. They were able to accurately identify 90\% of panda individuals.
+For identification of giant pandas, [Jin Hou et al] \cite{Hou} used significant data augmentation and trained a VGGnet for classification tasks. They were able to accurately identify 90\% of panda individuals.
 
 For the difficult task of Nyala identification, [Zyl et al] implemented an end to end system consisting of Faster R-CNN model for bounding box detection and then siamese network using ResNet-152 backbone for image embedding. Their top1 accuracy for zebra dataset is 74.1\% and top-10 accuracy of 85\% for Nyala animal identification.
 
@@ -114,6 +114,53 @@ For the difficult task of Nyala identification, [Zyl et al] implemented an end t
 
 \section{Methods}
 \label{sec:methods}
+
+\subsection{Dataset}
+Our primary dataset is provided by Prof Daniella Chusyd, Assistant Professor, School of Public Health. This dataset consists of 17 individual zoo elephants with a total of 1691 images. We refer this dataset as zoo dataset. Graph \ref{fig:zoo_images_per_class} shows distribution per class of these images. On an average there are 99 images per elephant. The standard deviation is 28 images. Minimum images per class is 44 and maximum is 152. The histogram \ref{fig:zoo_histogram} depicts these variations. After initial analysis of the elephant images, it is found that there is little variation in images of some of the elephants as shown in figure \ref{fig:img_variations}.
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.55]{zoo_images_per_class}
+   \caption{Zoo Dataset: Images per Elephant}
+   \label{fig:zoo_images_per_class}
+\end{figure}
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.32]{zoo_histogram}
+   \caption{Zoo Dataset: Histogram of images per class}
+   \label{fig:zoo_histogram}
+\end{figure}
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.40]{img_variations}
+   \caption{Zoo Dataset: Images of elephant id 1001}
+   \label{fig:img_variations}
+\end{figure}
+
+
+To enhance the variability in images, we researched and found Elpephants dataset \cite{Elpephants}. We acquired this elephant data by requesting Matthias Koerschens. This dataset consists of 274 individual elephants with a total of 2074 images. We refer to this dataset as wild dataset. On an average we have 7 elephants per class. The histogram \ref{fig:wild_histogram} depicts the distribution of images per class. This dataset has elephant images taken from various angles and backgrounds. Thus they provide variation which will help the network learn nuisance in the dataset. The figure \ref{fig:wild_img_variations} depicts three different views captured for an elephant.
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.32]{wild_histogram}
+   \caption{Wild Dataset: Histogram of images per class}
+   \label{fig:wild_histogram}
+\end{figure}
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.40]{wild_img_variations}
+   \caption{Wild Dataset: Images of elephant id 35}
+   \label{fig:wild_img_variations}
+\end{figure}
+
 
 \subsection{Elephant Detection and Extraction}
 
@@ -232,8 +279,8 @@ For elephant classification model, we used two backbone models of ResNet50 and I
 
 \subsection{Few Shot Learning}
 
-In Few shot learning, we have used two backbone architectures of ResNet50 and InceptionV3.Both these model performed well on zoo elephants and didn't perform well on wild elephants. 
-Next, we trained the models with and without image augmentation.Image augmentations consisted of left-right flip, small random changes to saturation and hue as shown in figure \ref{fig:augmentation}. We observed that performing image augmentation improved the accuracy by 17\%. We experimented with preserving the aspect ratio of images by padding them as shown in figure \ref{fig:image_padding} but it caused degradation of performance. We fine-tuned the model with entropy regularization and observed that the accuracy improved by 35\%. Graph \ref{fig:finetune_graph} shows the performance of model for various support set with and without fine-tuning implementation. For few shot learning, we have used support set size of 1, 2, 3, 5, 7, and 9. Graph \ref{fig:few_shot_graph} shows the Top-1 accuracy for model for various support sizes. It was observed that the support size of just 3 performed well with top-1 accuracy of about 81\% on zoo dataset. Furthermore, the top-1 accuracy of 99\% was achieved with the support set of 7. 
+In Few shot learning, we have used two backbone architectures of ResNet50 and InceptionV3.Both these model performed well on zoo elephants and didn't perform well on wild elephants. Table \ref{tab:few-shot-results} and \ref{tab:few-shot-results-wild} shows the accuracy results for zoo and wild elephant dataset respectively. Next, we trained the models with and without image augmentation.Image augmentations consisted of left-right flip, small random changes to saturation and hue as shown in figure \ref{fig:augmentation}. We observed that performing image augmentation improved the accuracy by 17\%. We experimented with preserving the aspect ratio of images by padding them as shown in figure \ref{fig:image_padding} but it caused degradation of performance. We fine-tuned the model with entropy regularization and observed that the accuracy improved by 35\%. Graph \ref{fig:finetune_graph} shows the performance of model for various support set with and without fine-tuning implementation. For few shot learning, we have used support set size of 1, 2, 3, 5, 7, and 9. Graph \ref{fig:few_shot_graph} shows the Top-1 accuracy for model for various support sizes. It was observed that the support size of just 3 performed well with top-1 accuracy of about 81\% on zoo dataset. Furthermore, the top-1 accuracy of 99\% was achieved with the support set of 7. 
+
 
 \begin{figure}[t]
   \centering
@@ -298,7 +345,8 @@ Next, we trained the models with and without image augmentation.Image augmentati
 
 \subsection{Siamese Network}
 
-In Siamese Network, we have  experimented with two backbone architectures of ResNet50 and InceptionV3 along with image augmentation. While training siamese network, we experimented with various triplet loss margins of 0.2, 0.5, 0.75 and selected margin of 0.5. We used triplet loss strategies of batch triplet loss and hard triplet loss. We observed the model performance using two optimizer: Adam and SGD and chose Adam optimizer. The model's performance was then tested with different embedding sizes: 64, 128 and 256, with the 256 embedding size providing the best results. Table \ref{} shows the VAL rate for embedding sizes of 64, 128 and 256.
+In Siamese Network, we have  experimented with two backbone architectures of ResNet50 and InceptionV3 along with image augmentation. While training siamese network, we experimented with various triplet loss margins of 0.2, 0.5, 0.75 and selected margin of 0.5. We used triplet loss strategies of batch triplet loss and hard triplet loss. We observed the model performance using two optimizer: Adam and SGD and chose Adam optimizer. The model's performance was then tested with different embedding sizes: 64, 128 and 256, with the 256 embedding size providing the best results. Table \ref{} shows the VAL rate for embedding sizes of 64, 128 and 256. With the hyperparameter choices of embedding size: 256, margin: 0.5, Batch size: 128, Optimizer: Adam, we got validation rate of 0.585 at false acceptance rate of 0.01. 
+
 
 
 \begin{table}[]
