@@ -93,6 +93,9 @@ def get_dataset(image_paths, image_labels, params,
 
     if cache_file:
         dataset = dataset.cache(cache_file)
+    else:
+        dataset = dataset.cache()
+        
 
     dataset = dataset.map(lambda x, y: (
         preprocess_image(x, params['image_size'], augment=augment, model_preprocess=model_preprocess), y),
