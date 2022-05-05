@@ -276,7 +276,7 @@ Next, we trained the models with and without image augmentation.Image augmentati
 \begin{tabular}{@{}lllllll@{}}
 \toprule
                        & \multicolumn{3}{l}{ResNet50}               & \multicolumn{3}{l}{InceptionV3} \\ \midrule
-\multicolumn{1}{l|}{n} & top-1 & top-3 & \multicolumn{1}{l|}{top-5} & top-1     & top-3    & top-5    \\
+\multicolumn{1}{l|}{n} & top-1 & top-3 & \multicolumn{1}{l|}{top-5} & top-1     & top-3    & top-5    \\ \midrule
 \multicolumn{1}{l|}{1} & 0.439 & 0.572 & \multicolumn{1}{l|}{0.703} & 0.449     & 0.585    & 0.659    \\
 \multicolumn{1}{l|}{3} & 0.776 & 0.9   & \multicolumn{1}{l|}{0.943} & 0.810     & 0.923    & 0.959    \\
 \multicolumn{1}{l|}{5} & 0.852 & 0.928 & \multicolumn{1}{l|}{0.955} & 0.918     & 0.966    & 0.976    \\
@@ -285,6 +285,22 @@ Next, we trained the models with and without image augmentation.Image augmentati
 \end{tabular}
 \caption{Accuracy results on Zoo elephants datasets using Few Shot for re-identification}
 \label{tab:few-shot-results}
+\end{table}
+
+
+\begin{table}[]
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+                       & \multicolumn{3}{l}{ResNet50}               & \multicolumn{3}{l}{InceptionV3} \\ \midrule
+\multicolumn{1}{l|}{n} & top-1 & top-3 & \multicolumn{1}{l|}{top-5} & top-1     & top-3    & top-5    \\ \midrule
+\multicolumn{1}{l|}{1} & 0.047 & 0.086 & \multicolumn{1}{l|}{0.106} & 0.048     & 0.088    & 0.112    \\
+\multicolumn{1}{l|}{3} & 0.111 & 0.179 & \multicolumn{1}{l|}{0.223} & 0.089     & 0.170    & 0.220    \\
+\multicolumn{1}{l|}{5} & 0.165 & 0.264 & \multicolumn{1}{l|}{0.323} & 0.165     & 0.255    & 0.321    \\
+\multicolumn{1}{l|}{7} & 0.212 & 0.342 & \multicolumn{1}{l|}{0.413} & 0.252     & 0.408    & 0.478    \\
+\multicolumn{1}{l|}{9} & 0.303 & 0.446 & \multicolumn{1}{l|}{0.525} & 0.280     & 0.460    & 0.510   
+\end{tabular}
+\caption{Accuracy results on Wild elephants datasets using Few Shot for re-identification}
+\label{tab:few-shot-results-wild}
 \end{table}
 
 
