@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from model import get_model, enable_finetune
-from triplet_loss import batch_all_triplet_loss, val, far, batch_hard_triplet_loss, adapted_triplet_loss
+from triplet_loss import batch_all_triplet_loss, val, far, batch_hard_triplet_loss, batch_partial_hard_triplet_loss
 from data import get_dataset, get_ELEP_images_and_labels, get_zoo_elephants_images_and_labels
 
 import tensorflow as tf
@@ -61,8 +61,8 @@ class SiameseModel(Model):
         elif self.params['triplet_strategy'] == "batch_hard":
             self.custom_loss = batch_hard_triplet_loss
 
-        elif self.params['triplet_strategy'] == "batch_adaptive":
-            self.custom_loss = adapted_triplet_loss
+        elif self.params['triplet_strategy'] == "batch_partial_hard":
+            self.custom_loss = batch_partial_hard_triplet_loss
 
     def call(self, inputs):
         return self.siamese_network(inputs)

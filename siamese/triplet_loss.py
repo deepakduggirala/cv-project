@@ -260,7 +260,7 @@ def batch_partial_hard_triplet_loss(labels, embeddings, margin=10, squared=False
 
     # for all nachor positve pairs, find the triplet loss with hardest negative
     triplet_loss = tf.maximum(
-        anchor_positive_dist - (hardest_negative_dist * mask_anchor_positive) + 0.5 * mask_anchor_positive, 0.0)
+        anchor_positive_dist - (hardest_negative_dist * mask_anchor_positive) + margin * mask_anchor_positive, 0.0)
 
     # Get final mean triplet loss
     triplet_loss = tf.reduce_sum(triplet_loss)/tf.reduce_sum(mask_anchor_positive)

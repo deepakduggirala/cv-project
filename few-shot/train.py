@@ -6,6 +6,7 @@ import os
 import math
 from pathlib import Path
 import numpy as np
+import time
 
 
 import tensorflow as tf
@@ -14,7 +15,7 @@ from tensorflow.keras import optimizers
 from sklearn.preprocessing import OneHotEncoder
 
 from model import FewShotModel
-from data import get_dataset, get_zoo_elephants_images_and_labels, get_support_and_query_sets
+from data import get_dataset, get_zoo_elephants_images_and_labels, get_support_and_query_sets, get_ELEP_images_and_labels
 
 
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -93,8 +94,8 @@ if __name__ == '__main__':
                         help="Number epochs to train the model for")
     parser.add_argument('--epochs2', default=0, type=int,
                         help="Number epochs to train the model for")
-    parser.add_argument('--save_freq', default=20, type=int,
-                        help="save model every 'save_freq' epochs")
+    parser.add_argument('--n_support', default=5, type=int,
+                        help="number of images of each class in the support set")
     parser.add_argument('--params', default='hyperparameters/init.json',
                         help="JSON file with parameters")
     parser.add_argument('--data_dir', default='../data/',
@@ -109,6 +110,8 @@ if __name__ == '__main__':
                         help="Restart the model from the best Checkpoint")
     parser.add_argument('--finetune', default=False, action='store_true',
                         help="unfreeze last layers of base model")
+    parser.add_argument('--do_not_augment', default=False, action='store_true',
+                        help="use data aumentation")
     args = parser.parse_args()
 
     print(args)
@@ -126,22 +129,22 @@ if __name__ == '__main__':
     support_labels_enc = enc.fit_transform(np.array(support_labels).reshape(-1, 1))
     query_labels_enc = enc.transform(np.array(query_labels).reshape(-1, 1))
 
-    cache_files = {
-        'train': str(Path(args.data_dir) / 'few_shot_train.cache'),
-        'val': str(Path(args.data_dir) / 'few_shot_val.cache'),
-    }
+    # cache_files = {
+    #     'train': str(Path(args.data_dir) / 'few_shot_train.cache'),
+    #     'val': str(Path(args.data_dir) / 'few_shot_val.cache'),
+    # }
 
     train_ds, N_train, _ = get_dataset(support_image_paths, support_labels_enc,
                                        params,
                                        augment=True,
-                                       cache_file=cache_files['train'],
+                                       cache_file=None,
                                        shuffle=True,
                                        batch_size=params['batch_size']['train'])
 
     val_ds, _, _ = get_dataset(query_image_paths, query_labels_enc,
                                params,
                                augment=False,
-                               cache_file=cache_files['val'],
+                               cache_file=None,
                                shuffle=False,
                                batch_size=params['batch_size']['val'])
 
@@ -169,6 +172,9 @@ if __name__ == '__main__':
         loss=my_loss_fn,
         metrics=['accuracy', top_3_acc, top_5_acc])
 
+    result = few_shot_model.evaluate(val_ds)
+    print('before finetuning', result)
+
     if args.restore_best:
         weights_path = str(Path(args.restore_best) / 'weights.ckpt')
         few_shot_model.load_weights(weights_path)
@@ -182,6 +188,8 @@ if __name__ == '__main__':
     input_shape = (None, params['image_size'], params['image_size'], 3)
     few_shot_model.compute_output_shape(input_shape=input_shape)
 
+    t = 1000 * time.time() # current time in milliseconds
+    np.random.seed(int(t) % 2**32)
     callbacks = make_callbacks(args, params, N_train)
 
     few_shot_model.fit(train_ds,

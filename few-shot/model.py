@@ -26,7 +26,7 @@ class FewShotModel():
     def __init__(self, params, use_base_model=True):
         self.params = params
         self.use_base_model = use_base_model
-        self.base_model = tf.keras.applications.ResNet50V2(include_top=False, weights="imagenet", input_shape=(
+        self.base_model = tf.keras.applications.InceptionResNetV2(include_top=False, weights="imagenet", input_shape=(
             params['image_size'], params['image_size'], 3), pooling='avg')
 
     def get_model(self, w_init):
