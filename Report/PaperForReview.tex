@@ -215,7 +215,6 @@ batch partial hard
 %-------------------------------------------------------------------------
 
 
-
 \section{Experiments and Results}
 \label{sec:expresults}
 
@@ -292,22 +291,23 @@ In Siamese Network, we have  experimented with two backbone architectures of Res
 \section{Discussion}
 \label{sec:discussion}
 
+For elephant detection architectures, we used Yolov4 \cite{yolov4}, Faster R-CNN Inception ResNet V2 1024x1024 \cite{fasterrcnn}, and SSD MobileNet v2 320x320 detection networks and observed that Faster R-CNN and SSD generated precise bounding boxes compared to YOLOV4.
 
+Features obtained from deep learning architectures pre-trained on ImageNet are good differentiators of elephants from other classes. We observed that these features served as a good prior for distinguishing elephant categories. 
 
+We observed that image augmentation consisting of left-right flip, small random changes to saturation and hue improved the performance of models. For few shot models, image augmentation helped to improve accuracy by 17\%
+
+We showed that few shot learning model uses fewer images per class to train and performs better than classification model using same deep learning architecture as backbone.
+
+In few shot learning, we observed that using as few images as three per elephant class generated good results with top-1 accuracy of 81\% and top-3 accuracy of 92\%. With use of 7 images per elephant class, we achieved top-1 accuracy of about 99\%
+
+We observed that using entropy regularization to fine-tune few shot learning increased accuracy by 35\%.
+
+We observed that siamese model overfits the data. The training of siamese network will require larger dataset to gain higher validation rate. 
 
 
 %-------------------------------------------------------------------------
 
-
-\section{Conclusion}
-\label{sec:conclusion}
-
-
-
-
-
-
-%-------------------------------------------------------------------------
 
 
 \begin{thebibliography}{99}
