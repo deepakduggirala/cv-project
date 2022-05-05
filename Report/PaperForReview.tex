@@ -66,8 +66,7 @@ Indiana University\\
 %%%%%%%%% ABSTRACT
 \begin{abstract}
 
-The goal of our project is to build vision model to re-identify elephants using their images. This model will be used by researchers to track elephant movement pattern in zoos and sanctuaries. 
-This non-invasive way of recognizing elephants is better than capturing and attaching devices to them which requires human intervention. Manually identifying elephants from images is a time-consuming process and a good automated model is essential. We have built an elephant re-identification model using three deep learning methods and performed experiments to identify the best parameters for the model. Our primary dataset (aka zoo dataset) provided by Prof. Chusyd. We have built a classification model to classify an image into one of the known elephant categories. With ResNet50 as the backbone and our primary dataset, this model's top-1 accuracy was 99.71\%. We aimed to recognize elephants with as few images as possible in our next approach, therefore we constructed a few shot learning model. Using just 3 images per class we obtained top-1 accuracy of 81\% and top-3 accuracy of 92\% on our primary dataset. The performance of few shot on more complex wild elephants dataset was not as good as zoo elephants so we moved to training Siamese network using triple loss (ala FaceNet). With the best hyperparameter choices, we got validation rate of 0.585 at false acceptance rate of 0.01.
+Our project's purpose is to create a vision model that can be used to re-identify elephants using images. Researchers can use this model to study elephant movement patterns in zoos and sanctuaries. This non-invasive method of identifying elephants is preferable than catching and attaching devices to them, which necessitates human intervention. Manually recognizing elephants from photos takes time, thus a robust automated model is essential. We created an elephant re-identification model using three deep learning algorithms and ran experiments to determine the best model parameters. Our primary dataset (aka zoo dataset) provided by Prof. Chusyd. We have built a classification model to classify an image into one of the known elephant categories. With ResNet50 as the backbone and our primary dataset, this model's top-1 accuracy was 99.71\%. We aimed to recognize elephants with as few images as possible in our next approach, therefore we constructed a few shot learning model. Using just 3 images per class we obtained top-1 accuracy of 81\% and top-3 accuracy of 92\% on our primary dataset. The performance of few shot on more complex wild elephants dataset was not as good as zoo elephants so we moved to training Siamese network using triple loss (ala FaceNet). With the best hyperparameter choices, we got validation rate of 0.585 at false acceptance rate of 0.01.
 
 
 
@@ -140,47 +139,42 @@ To re-identify an elephant given some of its images we consider three approaches
 
 \subsection{Classification}
 
-When the problem of re-identification is posed as a classification, the model is trained with labelled images of elephants. Both the train and validation sets will consist of disjoint images of the same elephant and the model has to learn the discriminative features and use them to predict the label of elephant images from the validation set. Our classification model consists of a pre-trained CNN as a backbone to provide the image embeddings and a couple of fully connected layers with softmax to classify the images into one of the elephants from the train set. Cross-entropy loss along with L2 regularization for the fully connected layers is used for training the model.
+When the re-identification problem is framed as a classification problem, the model is trained using labelled photos of elephants. The train and validation sets will both include disjoint images of the same elephant, and the model must learn discriminative features and use them to predict the labels of the images in the validation set. Our classification model is made up of a pre-trained CNN as a backbone that provides image embeddings and a pair of fully connected layers with softmax that classifies the images into one of the elephants from the train set. The model is trained using cross-entropy loss and L2 regularization for fully connected layers.
 
 
 \subsection{Few Shot Learning}
 
-When there are only a few images available per elephant, the train set used for classification becomes imbalanced and learning becomes difficult. To solve this problem few shot learning paradigm is utilized, where image embeddings from a pre-trained CNN of known images are compared with the embeddings of unknown images using a suitable similarity metric \cite{fewshotclassification}. 
+When just a few images are provided for each elephant, the train set used for classification becomes unbalanced, making learning difficult. A few shot learning approach is used to tackle this challenge, in which embeddings from a pre-trained CNN of known images (support set) are compared to the embeddings of unknown images (query set) using a suitable similarity measure \cite{fewshotclassification}.  If the support set contains k classes and has n images per class then the problem is called n-shot k-way classification. 
 
-Using a pre-trained CNN, the image embeddings are obtained. 
-
-Support set, query set
-
-query set image embedding, dot product, with mean embedding of the support set
-
-normalized embeddings
-
-softmax over the dot product results of all comparisons
-
-finetune
-- initial value of W
-- entropy regularization
-- cosine similarity instead of dot product
+The embeddings of all the images in the support set $S$ are obtained and normalized using a pre-trained model $f$. The mean of all L2 normalized embeddings of a given class will act as its representative. To classify an image from the query set, its embedding is compared to the mean embeddings of all classes, and the class with the closest embedding is selected as the prediction. Dot product or cosine similarity can be used to calculate similarity.
 
 $$
 w_{S_k} = \sum_{s \in S_k} \cfrac{ \lVert f(x_s) \rVert}{  | S | }
 $$
 
 $$
-z_{S_k}^{(q)} = \cfrac{w_{S_k}^T \lVert f(x_q) \rVert}{\lVert w_{S_k} \rVert} + b_{S_k}
+z_{S_k}^{(q)} = w_{S_k}^T \lVert f(x_q) \rVert
 $$
 
 $$
 \hat{y}^{(q)} = softmax(z^{(q)})
 $$
 
+$w_{S_k}$ is the mean embeddings of the class $k$ in the support set $S$. $\hat{y}^{(q)}$ is the prediction for image $x_q$ in the query set $Q$.
+
+This base model can be improved by learning $W$ as well as a bias vector $b$ from the support set using back propagation. 
+
+$$
+\hat{y}^{(q)} = softmax(\cfrac{W^T \lVert f(x_q) \rVert}{\lVert W \rVert} + b_{S_k})
+$$
+
+Along with cross-entropy loss, using an entropy regularization will improve the performance \cite{fewshotlectures}, \cite{fewshotbaseline}, \cite{fewshotmetabaseline} because it will force the model to be more sure about the predictions it is making.
+
 $$
 \mathcal{L} = \sum_{j}\sum_{i} (y_i^{(j)} log(\hat{y}_i^{(j)}) + \hat{y}_i^{(j)} log({\hat{y}_i^{(j)}}))
 $$
 
 where $y_i^{(j)}$ and $\hat{y}_i^{(j)}$ is the $i^{th}$ component of the true label and predicted labels of $j^{th}$ example respectively.
-
-The ideas above are from \cite{fewshotlectures}, \cite{fewshotbaseline}, \cite{fewshotmetabaseline}
 
 
 \begin{figure}[t]
@@ -305,6 +299,18 @@ Next, we trained the models with and without image augmentation.Image augmentati
 \subsection{Siamese Network}
 
 In Siamese Network, we have  experimented with two backbone architectures of ResNet50 and InceptionV3 along with image augmentation. While training siamese network, we experimented with various triplet loss margins of 0.2, 0.5, 0.75 and selected margin of 0.5. We used triplet loss strategies of batch triplet loss and hard triplet loss. We observed the model performance using two optimizer: Adam and SGD and chose Adam optimizer. The model's performance was then tested with different embedding sizes: 64, 128 and 256, with the 256 embedding size providing the best results. Table \ref{} shows the VAL rate for embedding sizes of 64, 128 and 256.
+
+
+\begin{table}[]
+\begin{tabular}{@{}l|l@{}}
+Embedding Size & VAL   \\ \midrule
+64             & 0.441 \\
+128            & 0.513 \\
+256            & 0.585
+\end{tabular}
+\caption{Effect of embedding size on Validation rate (VAL) at a fixed False Acceptance Rate (FAR) of 0.01}
+\label{tab:embedding-size-val}
+\end{table}
 
 %-------------------------------------------------------------------------
 
