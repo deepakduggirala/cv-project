@@ -9,6 +9,8 @@ latest_weights
 runs
 *.npy
 
+Report/*.pdf
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
