@@ -233,23 +233,53 @@ where $y_i^{(j)}$ and $\hat{y}_i^{(j)}$ is the $i^{th}$ component of the true la
 
 \subsection{Siamese Network}
 
-Facenet paper
-
-triplet loss
+Siamese Network is based on learning a Euclidean embedding per image using a deep convolutional network. \cite{Facenet}. The network is trained such that the squared L2 distances in the embedding space directly correspond to similarity: same elephants have small distances and distinct elephants have large distances.\cite{Facenet}. Siamese Network is trained using Triplet loss.Triplet loss is based on 3 images: Anchor, Positive and Negative. Anchor and Positive are images of same elephant. While negative image is different from anchor and positive image. The aim of triplet loss is to minimize the euclidean distance between embeddings of anchor and positive images and maximize the euclidean distance between anchor and negative image. The model trained with triplet loss should generate similar embeddings between anchor and positive and different embeddings between anchor and negative. To increase the distinctiveness between embeddings of positive and negative images, a margin parameter is used. This parameter with L2 distance of anchor and positive should be less than L2 distance of anchor and negative. Figure \ref{fig:triplet_loss} represents the triplet loss function.
 
 $$
 \mathcal{L} = \sum_{i}^N \Big[ \lVert f(x_i^a) - f(x_i^p)\rVert_2^2 - \lVert f(x_i^a) - f(x_i^n)\rVert_2^2  + \alpha \Big]
 $$
 
-batchall
+where $x_i^a$ is anchor, $x_i^p$ is positive, $x_i^n$ is negative, $\alpha$ is margin
 
-batch hard
 
-hard positive: $x_i^P = \text{argmax}_{x_i^p}  \lVert f(x_i^a) - f(x_i^p)\rVert_2^2$
+Siamese model is trained on all triplet, hard triplet and partial hard triplets. All all possible triplets would result in many triplets that are easily satisfied. These triplets would not contribute to the training and result in slower convergence, as they would still be passed through the network. It is crucial to select hard triplets, that are active and can therefore contribute to improving the model. In order to ensure fast convergence it is crucial to select triplets that violate the triplet constraint equation above. \cite{Facenet} This means that, given $x_i^a$, a hard positive and hard negative should be selected.
 
-hard negative: $x_i^N = \text{argmin}_{x_i^n}  \lVert f(x_i^a) - f(x_i^n)\rVert_2^2$
+hard positive: $x_i^P = \text{argmax}_{x_i^p}  \lVert f(x_i^a) - f(x_i^p)\rVert_2^2$ \\
 
-batch partial hard
+hard negative: $x_i^N = \text{argmin}_{x_i^n}  \lVert f(x_i^a) - f(x_i^n)\rVert_2^2$ \\
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.275]{triplet_loss}
+   \caption{Triplet Loss}
+   \label{fig:triplet_loss}
+\end{figure}
+
+
+The model is evaluated using Validation Rate and False Accept Rate.  All elephant pairs (i, j) of the same identity are denote by $P_{same}$ and all different pairs are denoted by $P_{diff}$. \cite{Facenet} 
+
+Set of all True Accepts (TA): 
+$$
+TA(d) = {(i,j) \in \mathcal{P}_{same} \text{ with } D(x_i, x_j) \le d} 
+$$
+
+Set of all False Accepts (FA): 
+$$
+FA(d) = {(i,j) \in \mathcal{P}_{diff} \text{ with } D(x_i, x_j) \le d} 
+$$
+
+
+The equations for validation rate $VAL(d)$ and the false accept rate $FAR(d)$:
+
+$$
+VAL(d) = \cfrac{|TA(d)|}{|\mathcal{P}_{same}|}
+$$
+
+$$
+FAR(d) = \cfrac{|FA(d)|}{|\mathcal{P}_{diff}|}
+$$
+
 
 %-------------------------------------------------------------------------
 
